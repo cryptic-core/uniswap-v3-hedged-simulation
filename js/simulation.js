@@ -356,7 +356,7 @@ const simulate = () => {
             let curCapital = hedged_asset + feeIncome_accu
             scatter_points.push([d,k,curCapital])
 
-            console.log(`day ${d} price${k} asset=${newAssetValue} fee ${feeIncome_accu} heg ${(uPnL+fundrate_income_accu)} total ${curCapital}` )
+            //console.log(`day ${d} price${k} asset=${newAssetValue} fee ${feeIncome_accu} heg ${(uPnL+fundrate_income_accu)} total ${curCapital}` )
 
             
             if(rawIL_fee>profithigh){
