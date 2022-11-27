@@ -16,15 +16,12 @@ button {
   height: auto;
   padding: 10px 40px;
   background: #ABABAB;
-  
-  
   font-family: "Montserrat";
 }
 
 .chart-container {
   margin: 0 0;
-  width: auto;
-  height: auto;
+  height: 100%;
   padding: 10px 25px;
   background: #ABABAB;
   margin-left:100px;
@@ -374,12 +371,7 @@ button {
 }
 /*# sourceMappingURL=style.css.map */
 
-body {
-  width: 100%;
-  height: 100%;
-  
-  
-}
+
 body { 
   font-family: segoe-ui_normal,Segoe UI,Segoe,Segoe WP,Helvetica Neue,Helvetica,sans-serif;
   display: grid;
@@ -389,10 +381,8 @@ body {
   "footer footer footer";
   grid-template-rows: 80px 1fr 50px;
   grid-template-columns: 0% 1fr 30%;
-  grid-gap: 0px;
   height: 100vh;
-  margin: 1px;  
-    font-size: 40;
+  font-size: 40;
 }
 
 header {
@@ -406,7 +396,7 @@ section {
 }
 
 aside {
-  background: #C9C9C9;
+  background: #ABABAB;
   grid-area: aside; 
 }
 

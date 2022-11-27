@@ -6,34 +6,34 @@
     <link rel="stylesheet" href="css/style.css">
     <script type="text/javascript" src="https://assets.pyecharts.org/assets/echarts.min.js"></script>
     <script type="text/javascript" src="https://assets.pyecharts.org/assets/echarts-gl.min.js"></script>
-
+    <script src="js/simulation.js"></script>
+    <script src="js/script.js"></script>
 </head>
 <header>
     <h2 style="color:#fff">UniswapV3 Asset IL/Fee/Hedge Simulation</h2>
 </header>
 <section>
-    <div id="assetchart" class="chart-container" style="width:1000px; height:720px;"></div>
-    <script src="js/simulation.js"></script>
-    <script src="js/script.js"></script>
+    <div id="assetchart" class="chart-container" >
+    </div>
 </section>
 <aside>
     <div class="container">
         
         <div class="length inputbox">
             <div class="field-title" data-length='0'>Initial &nbsp Capital</div>
-            <input class="result__viewbox" id="initialCapital" value="10000"></input>
+            <input class="result__viewbox" id="initialCapital" value="5000"></input>
         </div>
         <div class="length inputbox">
-            <div class="field-title" data-length='0'>Entry &nbsp Price</div>
-            <input class="result__viewbox" id="initialPrice" value="4000"></input>
+            <div class="field-title" data-length='0'>Current &nbsp Price</div>
+            <input class="result__viewbox" id="initialPrice" value="1208"></input>
         </div>
         <div class="length range__slider" data-min="0" data-max="16000">
             <div class="length__title field-title" data-length='0'>Upper Price&nbsp&nbsp</div>
-            <input id="slider" class="slider" type="range" min="0" max="16000" value="5000" />
+            <input id="slider" class="slider" type="range" min="0" max="16000" value="1500" />
         </div>
         <div class="length range__slider" data-min="0" data-max="16000">
             <div class="length__title field-title" data-length='0'>Lower Price&nbsp&nbsp</div>
-            <input id="slider" class="slider" type="range" min="0" max="16000" value="2000" />
+            <input id="slider" class="slider" type="range" min="0" max="16000" value="900" />
         </div>
         <div class="length range__slider" data-min="5" data-max="100">
             <div class="length__title field-title" data-length='0'>Hedge Ratio &nbsp&nbsp</div>

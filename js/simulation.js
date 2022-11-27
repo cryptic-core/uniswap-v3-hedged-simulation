@@ -242,11 +242,11 @@ const simulate = () => {
         chart_d = echarts.init(document.getElementById('assetchart'), 'white', {renderer: 'canvas'})
     }
     // do simulate
-    let initialCapital = 10000
-    let initialPrice = 4000
+    let initialCapital = 5000
+    let initialPrice = 1208
     let USD_Price = 1
-    let upper = 5000
-    let lower = 2000
+    let upper = 1500
+    let lower = 900
     let fee_rate = 0.3
     let initTVL = 159.27 * 1000000
     let TVLGrowRate = 0.05
