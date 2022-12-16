@@ -1,6 +1,7 @@
 var chart_d = null
 var scatter_points = []
-
+var below_zero = []
+var below_zero_line = []
 var profitlow = 0
 var profithigh = -99999999999
 const getTokenAmountsFromDepositAmounts = (P,Pl,Pu,priceUSDX,priceUSDY,targetAmounts)=>{
@@ -86,18 +87,7 @@ const chart_opt_with_param = (xTitle,yTitle,zTitle,data,profitlow,profithigh) =>
         show: false,
         dimension: 0,
         seriesIndex: 0,
-        pieces: [
-          {
-            gt: 1,
-            lt: 3,
-            color: 'rgba(0, 0, 180, 0.4)'
-          },
-          {
-            gt: 5,
-            lt: 7,
-            color: 'rgba(0, 0, 180, 0.4)'
-          }
-        ]
+        pieces:below_zero
     },
     "series": [
         {
@@ -111,7 +101,7 @@ const chart_opt_with_param = (xTitle,yTitle,zTitle,data,profitlow,profithigh) =>
             markLine: {
                 symbol: ['none', 'none'],
                 label: { show: false },
-                data: [{ xAxis: 1 }, { xAxis: 3 }]
+                data: below_zero_line
             },
             areaStyle: {},
             "data": data,
@@ -132,8 +122,8 @@ const simulate = () => {
         chart_d = echarts.init(document.getElementById('assetchart'), 'white', {renderer: 'canvas'})
     }
     // do simulate
-    let initialCapital = 10000
-    let initialPrice = 0.89
+    let initCapital = 10000
+    let cprice_matic = 0.89
     let USD_Price = 1
     let hedgeRatio = 0.05 // 做空比率，0.7代表留了30%的上漲空間
     let miningRatio = 0.6 // 拿來做 uniswap LP 比率，增加部位中性程度
@@ -145,7 +135,6 @@ const simulate = () => {
     let initTVL = 159.27 * 1000000
     let TVLGrowRate = 0.05
     
-    
     const sliders = document.getElementsByClassName("range__slider")
 	for (let i = 0; i < sliders.length; i++){
 		let sld = sliders[i]
@@ -153,9 +142,9 @@ const simulate = () => {
         let sliders_txt = sld.getElementsByClassName("length__title")
         let sldtitle = sliders_txt[0].innerText
         if(sldtitle.includes('Upper Percentage') ){
-            upper = initialPrice * (1 + sld.querySelector("input").value*0.01)
+            upper = cprice_matic * (1 + sld.querySelector("input").value*0.01)
         }else if(sldtitle.includes('Lower Percentage') ){
-            lower = initialPrice * (1 - sld.querySelector("input").value*0.01)
+            lower = cprice_matic * (1 - sld.querySelector("input").value*0.01)
         }else if(sldtitle.includes('Borrow Ratio')){
             hedgeRatio = sld.querySelector("input").value*0.01
         }else if(sldtitle.includes('LP Amount Ratio')){
@@ -169,9 +158,9 @@ const simulate = () => {
         let inp = input_txt[i]
         let title = inp.getElementsByClassName('field-title')[0].innerText
         if(title.includes('Initial')){
-            initialCapital = inp.getElementsByClassName('result__viewbox')[0].value
+            initCapital = inp.getElementsByClassName('result__viewbox')[0].value
         }else if(title.includes('Current')){
-            initialPrice = inp.getElementsByClassName('result__viewbox')[0].value
+            cprice_matic = inp.getElementsByClassName('result__viewbox')[0].value
         }
     }
 
@@ -180,84 +169,71 @@ const simulate = () => {
     // console.log(`lower ${lower}`);
     // console.log(`hedgeRatio ${hedgeRatio}`);
     // console.log(`miningRatio ${miningRatio}`);
-    // console.log(`initialCapital ${initialCapital}`);
+    // console.log(`initCapital ${initCapital}`);
     // console.log(`initialPrice ${initialPrice}`);
     
     scatter_points = []
-    below_zero = [{ xAxis: 1 }, { xAxis: 3 }] // start price end
+    below_zero = [] // start below zero price till chart end
+    below_zero_line = []
 
-    let rwkd = getTokenAmountsFromDepositAmounts(initialPrice,lower,upper,initialPrice,USD_Price,initialCapital)
-    let rawAmtEth = rwkd.deltaX
-    let rawAmtUsd = rwkd.deltaY
-    let rawLq = calcLiquidity(initialPrice,upper,lower,rawAmtEth,rawAmtUsd)
+    // 一開始借幣數量
+    let hedgeUSDAmt = initCapital * hedgeRatio
+    // 借來的顆數
+    let shortAmt = hedgeUSDAmt/cprice_matic
+    // 借來的顆數實際拿下去作市的數量
+    let miningAmt = shortAmt*miningRatio
+    // 借來的，持幣不參與作市
+    let longAmt = shortAmt - miningAmt 
+    let mining_usd_amt = miningAmt * cprice_matic
 
-    let poolAsset = initialCapital - (initialCapital*hedgeRatio)
-    let inkd = getTokenAmountsFromDepositAmounts(initialPrice,lower,upper,initialPrice,USD_Price,poolAsset)
-    let initialAmtEth = inkd.deltaX
-    let initialAmtUsd = inkd.deltaY
+    let inkd = getTokenAmountsFromDepositAmounts(cprice_matic, lower, upper, cprice_matic, 1, mining_usd_amt)
+    let deltaX = inkd.deltaX
+    let deltaY = inkd.deltaY
+    let rawLq = calcLiquidity(initialPrice,upper,lower,deltaX,deltaY)
+
+    let tick = 0.01
+    let start_price = lower*0.5
+    let end_price = upper*1.3
+    let num_steps = parseInt((end_price-start_price)/tick)
     
-    return
-    for(let k = 1;k<initialPrice*2;k+=50){
-        let feeIncome_raw_accu = 0
-        let feeIncome_accu = 0
-        let fundrate_income_accu = 0
+    let start_lose_money_point = -1
+    for(let k = 1;k<num_steps;k++){
+        let P = start_price + tick * k
+        //當前經過 IL 計算之後部位剩餘顆數
+        let P_clamp = Math.min( Math.max(P,lower),upper)
+        let rawlpc = getILPriceChange(cprice_matic,P_clamp,upper,lower,deltaX,deltaY)
+        let amt1 = rawlpc.Lx2
+        let amt2 = rawlpc.Ly2
+        curamt = amt1+amt2/P + longAmt
+        let hedged_res = initCapital - (shortAmt - curamt)*P
         
-        let curp = k
-        if(k>upper)
-            curp = upper
+        scatter_points.push([P.toFixed(3),hedged_res])
         
-        let rawlpc = getILPriceChange(initialPrice,curp,upper,lower,rawAmtEth,rawAmtUsd)
-        let rawIL = rawlpc.newAssetValue
-        if(rawIL<0)
-            rawIL=0
-        scatter_points.push([d,k,rawIL])
-
-
-        let nthDay_tvl = initTVL * (1+TVLGrowRate/30*d)
-        let rand = Math.random()
-        let todayVolEstimation = tradevol_lower + rand * (tradevol_upper - tradevol_lower)
-        
-        let feeIncome_rw = (rawLq / nthDay_tvl) * todayVolEstimation * (1+TVLGrowRate/30*d) * fee_rate * 0.01
-        feeIncome_raw_accu += feeIncome_rw
-
-        let rawIL_fee = rawIL + feeIncome_raw_accu
-        
-
-
-        let ilpc = getILPriceChange(initialPrice,curp,upper,lower,initialAmtEth,initialAmtUsd)
-        let newAssetValue = ilpc.newAssetValue
-        if(newAssetValue<0)
-            newAssetValue=0
-        
-        let hedge_price = initialPrice
-        let h_eth = (initialCapital*hedge_rto) / initialPrice
-        const max_lvg = 10
-        let _lvg = (1 - hedge_rto) / hedge_rto
-        if(_lvg>max_lvg){
-            _lvg = max_lvg
+        if(start_lose_money_point<0){
+            if(hedged_res<initCapital){
+                start_lose_money_point = k
+            }
         }
-        let nominalSz = _lvg*h_eth
-        let uPnL = Math.max( h_eth*hedge_price + (hedge_price - k) * nominalSz , 0 )
         
-
-        let hedged_asset = newAssetValue + uPnL + fundrate_income_accu
         
-        let curCapital = hedged_asset + feeIncome_accu
-        scatter_points.push([d,k,curCapital])
-
-        //console.log(`day ${d} price${k} asset=${newAssetValue} fee ${feeIncome_accu} heg ${(uPnL+fundrate_income_accu)} total ${curCapital}` )
-
-        
-        if(rawIL_fee>profithigh){
-            profithigh=rawIL_fee
-        }
-        if(newAssetValue>profithigh){
-            profithigh=newAssetValue
-        }
-        if(curCapital>profithigh){
-            profithigh=curCapital
-        }
+        // // simulate fee income
+        // let nthDay_tvl = initTVL * (1+TVLGrowRate/30*d)
+        // let rand = Math.random()
+        // let todayVolEstimation = tradevol_lower + rand * (tradevol_upper - tradevol_lower)
+        // let feeIncome_rw = (rawLq / nthDay_tvl) * todayVolEstimation * (1+TVLGrowRate/30*d) * fee_rate * 0.01
+        // feeIncome_raw_accu += feeIncome_rw
     }
+
+    
+    below_zero.push({
+        gt: start_lose_money_point,
+        lt: num_steps,
+        color: 'rgba(0, 0, 180, 0.4)'
+    })
+    below_zero_line.push({
+        xAxis:start_lose_money_point,
+    })
+    console.log(below_zero);
 }
 
 const toggleChartData = () => {

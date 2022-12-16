@@ -360,6 +360,13 @@ button {
   margin-left: 10px;
   background-image: linear-gradient(180deg, #a787c7 0%, #764ba2 100%);  
 }
+.btnplus:active {
+  -webkit-transform: translateY(-3%);
+          transform: translateY(-3%);
+  -webkit-box-shadow: 0 4px 8px rgba(255, 255, 255, 0.08);
+          box-shadow: 0 4px 8px rgba(255, 255, 255, 0.08);
+}
+
 .btn.generate {
   -webkit-user-select: none;
      -moz-user-select: none;
