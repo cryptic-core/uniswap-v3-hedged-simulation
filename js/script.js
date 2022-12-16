@@ -1,6 +1,6 @@
 NodeList.prototype[Symbol.iterator] = Array.prototype[Symbol.iterator];
 HTMLCollection.prototype[Symbol.iterator] = Array.prototype[Symbol.iterator];
-
+var dayCnt = 0
 const init = () => {
 	toggleChartData()
 	const sliderProps = {
@@ -34,14 +34,16 @@ const init = () => {
 	let cb = document.getElementsByClassName("btn_container")
 	// simulate click
 	cb[0].getElementsByTagName("button").Simulate.addEventListener("click", () => {
-		toggleChartData()
+		toggleChartData(dayCnt)
 	})
 	
 	cb[1].getElementsByTagName("button")[0].addEventListener("click", () => {
-	 	toggleChartData()
+		dayCnt++
+	 	toggleChartData(dayCnt)
 	})
 	cb[1].getElementsByTagName("button")[1].addEventListener("click", () => {
-		toggleChartData()
+		Math.max(dayCnt--,0)
+		toggleChartData(dayCnt)
 	})
 }
 window.addEventListener('load', ()=> {

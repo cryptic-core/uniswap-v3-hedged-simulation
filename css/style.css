@@ -359,6 +359,7 @@ button {
   margin-right: 10px;
   margin-left: 10px;
   background-image: linear-gradient(180deg, #a787c7 0%, #764ba2 100%);  
+  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.1);
 }
 .btnplus:active {
   -webkit-transform: translateY(-3%);

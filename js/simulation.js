@@ -2,8 +2,7 @@ var chart_d = null
 var scatter_points = []
 var below_zero = []
 var below_zero_line = []
-var profitlow = 0
-var profithigh = -99999999999
+
 const getTokenAmountsFromDepositAmounts = (P,Pl,Pu,priceUSDX,priceUSDY,targetAmounts)=>{
     
     deltaL = targetAmounts / ((Math.sqrt(P) - Math.sqrt(Pl)) * priceUSDY + 
@@ -100,7 +99,7 @@ const chart_opt_with_param = (xTitle,yTitle,zTitle,data,profitlow,profithigh) =>
                 },
                 markLine: {
                     symbol: ['none', 'none'],
-                    label: { show: false },
+                    label: { formatter: 'Liquidate' },
                     data: below_zero_line
                 },
                 areaStyle: {},
@@ -119,7 +118,7 @@ const chart_opt_with_param = (xTitle,yTitle,zTitle,data,profitlow,profithigh) =>
     }       
 }
 
-const simulate = () => {
+const simulate = (cnt=0) => {
     if(!chart_d){
         chart_d = echarts.init(document.getElementById('assetchart'), 'white', {renderer: 'canvas'})
     }
@@ -134,9 +133,10 @@ const simulate = () => {
     let upper = 1.1
     let lower = 0.81
     let fee_rate = 0.3
-    let initTVL = 159.27 * 1000000
-    let TVLGrowRate = 0.05
+    let initTVL = 7.5 * 1000000
+    let range_perc = 0 // 預設1%越寬越少推估的
     
+
     const sliders = document.getElementsByClassName("range__slider")
 	for (let i = 0; i < sliders.length; i++){
 		let sld = sliders[i]
@@ -145,6 +145,7 @@ const simulate = () => {
         let sldtitle = sliders_txt[0].innerText
         if(sldtitle.includes('Upper Percentage') ){
             upper = cprice_matic * (1 + sld.querySelector("input").value*0.01)
+            range_perc = sld.querySelector("input").value
         }else if(sldtitle.includes('Lower Percentage') ){
             lower = cprice_matic * (1 - sld.querySelector("input").value*0.01)
         }else if(sldtitle.includes('Borrow Ratio')){
@@ -153,6 +154,7 @@ const simulate = () => {
             miningRatio = sld.querySelector("input").value*0.01
         }
     }
+    
     
 
     const input_txt = document.getElementsByClassName("inputbox")
@@ -190,6 +192,9 @@ const simulate = () => {
     // AAVE 清算線
     let liquidation_price = cprice_matic * (2.0-hedgeRatio)
 
+    // 預設1%越寬越少推估的
+    const fee_rate_estimated_1 = 0.001915 * cnt / range_perc * miningAmt
+
     let inkd = getTokenAmountsFromDepositAmounts(cprice_matic, lower, upper, cprice_matic, 1, mining_usd_amt)
     let deltaX = inkd.deltaX
     let deltaY = inkd.deltaY
@@ -211,7 +216,7 @@ const simulate = () => {
         let amt2 = rawlpc.Ly2
         curamt = amt1+amt2/P + longAmt
         let hedged_res = initCapital - (shortAmt - curamt)*P
-        
+        hedged_res += fee_rate_estimated_1
         scatter_points.push([P.toFixed(3),hedged_res])
         
         if(start_lose_money_point<0){
@@ -253,11 +258,11 @@ const simulate = () => {
             xAxis:liquidation_point,
         }
     )
-    console.log(below_zero);
+    
 }
 
-const toggleChartData = () => {
-    simulate()
-    let opt1 = chart_opt_with_param("Day","Price","Asset Value",scatter_points,profitlow,profithigh)
+const toggleChartData = (cnt) => {
+    simulate(cnt)
+    let opt1 = chart_opt_with_param("Day","Price","Asset Value",scatter_points)
     chart_d.setOption(opt1)
 }
