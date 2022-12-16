@@ -2,7 +2,7 @@ NodeList.prototype[Symbol.iterator] = Array.prototype[Symbol.iterator];
 HTMLCollection.prototype[Symbol.iterator] = Array.prototype[Symbol.iterator];
 var dayCnt = 0
 const init = () => {
-	toggleChartData()
+	toggleChartData(dayCnt)
 	const sliderProps = {
 		fill: "#0B1EDF",
 		background: "rgba(255, 255, 255, 0.214)",

@@ -62,7 +62,7 @@ const getILPriceChange = (
     return {newAssetValue,Lx2,Ly2}
 }
 
-const chart_opt_with_param = (xTitle,yTitle,zTitle,data,profitlow,profithigh) => {
+const chart_opt_with_param = (day,data) => {
         
     return {
         "animation": true,
@@ -73,6 +73,9 @@ const chart_opt_with_param = (xTitle,yTitle,zTitle,data,profitlow,profithigh) =>
         "animationDurationUpdate": 300,
         "animationEasingUpdate": "cubicOut",
         "animationDelayUpdate": 0,
+        title: {
+            text: `Day ${day}`
+        },
         xAxis: {
             type: 'category',
             boundaryGap: false
@@ -102,6 +105,7 @@ const chart_opt_with_param = (xTitle,yTitle,zTitle,data,profitlow,profithigh) =>
                     label: { formatter: 'Liquidate' },
                     data: below_zero_line
                 },
+                
                 areaStyle: {},
                 "data": data,
                 "label": {
@@ -207,6 +211,7 @@ const simulate = (cnt=0) => {
     
     let start_lose_money_point = -1
     let liquidation_point = -1
+    let entry_price = -1
     for(let k = 1;k<num_steps;k++){
         let P = start_price + tick * k
         //當前經過 IL 計算之後部位剩餘顆數
@@ -229,14 +234,12 @@ const simulate = (cnt=0) => {
                 liquidation_point = k-1
             }
         }
+        if(entry_price<0){
+            if(P>=cprice_matic){
+                entry_price = k-1
+            }
+        }
         
-        
-        // // simulate fee income
-        // let nthDay_tvl = initTVL * (1+TVLGrowRate/30*d)
-        // let rand = Math.random()
-        // let todayVolEstimation = tradevol_lower + rand * (tradevol_upper - tradevol_lower)
-        // let feeIncome_rw = (rawLq / nthDay_tvl) * todayVolEstimation * (1+TVLGrowRate/30*d) * fee_rate * 0.01
-        // feeIncome_raw_accu += feeIncome_rw
     }
 
     
@@ -255,7 +258,18 @@ const simulate = (cnt=0) => {
     )
     below_zero_line.push(
         {
+            name: 'liquidate',
             xAxis:liquidation_point,
+            label: { 
+                formatter: 'liquidate',
+            },
+        },
+        {
+            name: 'entryPrice',
+            xAxis:entry_price,
+            label: { 
+                formatter: 'entryPrice',
+            },
         }
     )
     
@@ -263,6 +277,7 @@ const simulate = (cnt=0) => {
 
 const toggleChartData = (cnt) => {
     simulate(cnt)
-    let opt1 = chart_opt_with_param("Day","Price","Asset Value",scatter_points)
+    console.log(cnt);
+    let opt1 = chart_opt_with_param(cnt,scatter_points)
     chart_d.setOption(opt1)
 }
