@@ -135,40 +135,53 @@ const simulate = () => {
     let initialCapital = 10000
     let initialPrice = 0.89
     let USD_Price = 1
+    let hedgeRatio = 0.05 // 做空比率，0.7代表留了30%的上漲空間
+    let miningRatio = 0.6 // 拿來做 uniswap LP 比率，增加部位中性程度
+
+
     let upper = 1.1
     let lower = 0.81
     let fee_rate = 0.3
     let initTVL = 159.27 * 1000000
     let TVLGrowRate = 0.05
-    let tradevol_upper = 6000.59 * 1000000
-    let tradevol_lower = 551.57 * 1000000
-    let hedge_rto = 0.05
-    let fundrate_upper = 0.03*0.01*3
-    let fundrate_lower = 0.01*0.01*3
     
-    const sliders_txt = document.getElementsByClassName("length__title")
-    for (let i = 0; i < sliders_txt.length; i++){
-        let sld = sliders_txt[i]
-        if(sld.innerText.includes('Upper Price') ){
-            upper = parseFloat(sld.parentElement.getElementsByClassName('slider')[0].value)
-        }else if(sld.innerText.includes('Lower Price') ){
-            lower = parseFloat(sld.parentElement.getElementsByClassName('slider')[0].value)
-        }else if(sld.innerText.includes('Hedge Ratio')){
-            let short_ratio = parseFloat(sld.parentElement.getElementsByClassName('slider')[0].value)
-            hedge_rto = short_ratio*0.01
+    
+    const sliders = document.getElementsByClassName("range__slider")
+	for (let i = 0; i < sliders.length; i++){
+		let sld = sliders[i]
+        const sliderValue = sld.querySelector(".length__title")
+        let sliders_txt = sld.getElementsByClassName("length__title")
+        let sldtitle = sliders_txt[0].innerText
+        if(sldtitle.includes('Upper Percentage') ){
+            upper = initialPrice * (1 + sld.querySelector("input").value*0.01)
+        }else if(sldtitle.includes('Lower Percentage') ){
+            lower = initialPrice * (1 - sld.querySelector("input").value*0.01)
+        }else if(sldtitle.includes('Borrow Ratio')){
+            hedgeRatio = sld.querySelector("input").value*0.01
+        }else if(sldtitle.includes('LP Amount Ratio')){
+            miningRatio = sld.querySelector("input").value*0.01
         }
     }
     
+
     const input_txt = document.getElementsByClassName("inputbox")
     for (let i = 0; i < input_txt.length; i++){
         let inp = input_txt[i]
         let title = inp.getElementsByClassName('field-title')[0].innerText
-        if(title==='Initial Capital'){
-            initialCapital = parseFloat(inp.getElementsByClassName('result__viewbox')[0].getAttribute('value'))
-        }else if(title==='Initial Capital'){
-            initialPrice = parseFloat(inp.getElementsByClassName('result__viewbox')[0].getAttribute('value'))
+        if(title.includes('Initial')){
+            initialCapital = inp.getElementsByClassName('result__viewbox')[0].value
+        }else if(title.includes('Current')){
+            initialPrice = inp.getElementsByClassName('result__viewbox')[0].value
         }
     }
+
+    // check input parameters
+    // console.log(`upper ${upper}`);
+    // console.log(`lower ${lower}`);
+    // console.log(`hedgeRatio ${hedgeRatio}`);
+    // console.log(`miningRatio ${miningRatio}`);
+    // console.log(`initialCapital ${initialCapital}`);
+    // console.log(`initialPrice ${initialPrice}`);
     
     scatter_points = []
     below_zero = [{ xAxis: 1 }, { xAxis: 3 }] // start price end
@@ -178,83 +191,71 @@ const simulate = () => {
     let rawAmtUsd = rwkd.deltaY
     let rawLq = calcLiquidity(initialPrice,upper,lower,rawAmtEth,rawAmtUsd)
 
-    let poolAsset = initialCapital - (initialCapital*hedge_rto)
+    let poolAsset = initialCapital - (initialCapital*hedgeRatio)
     let inkd = getTokenAmountsFromDepositAmounts(initialPrice,lower,upper,initialPrice,USD_Price,poolAsset)
     let initialAmtEth = inkd.deltaX
     let initialAmtUsd = inkd.deltaY
-    let initialLq = calcLiquidity(initialPrice,upper,lower,initialAmtEth,initialAmtUsd)
     
-    
-    
+    return
     for(let k = 1;k<initialPrice*2;k+=50){
         let feeIncome_raw_accu = 0
         let feeIncome_accu = 0
         let fundrate_income_accu = 0
-        for(let d = 1;d<366;d+=5){
-            let curp = k
-            if(k>upper)
-                curp = upper
-            
-            let rawlpc = getILPriceChange(initialPrice,curp,upper,lower,rawAmtEth,rawAmtUsd)
-            let rawIL = rawlpc.newAssetValue
-            if(rawIL<0)
-                rawIL=0
-            scatter_points.push([d,k,rawIL])
+        
+        let curp = k
+        if(k>upper)
+            curp = upper
+        
+        let rawlpc = getILPriceChange(initialPrice,curp,upper,lower,rawAmtEth,rawAmtUsd)
+        let rawIL = rawlpc.newAssetValue
+        if(rawIL<0)
+            rawIL=0
+        scatter_points.push([d,k,rawIL])
 
 
-            let nthDay_tvl = initTVL * (1+TVLGrowRate/30*d)
-            let rand = Math.random()
-            let todayVolEstimation = tradevol_lower + rand * (tradevol_upper - tradevol_lower)
-            
-            let feeIncome_rw = (rawLq / nthDay_tvl) * todayVolEstimation * (1+TVLGrowRate/30*d) * fee_rate * 0.01
-            feeIncome_raw_accu += feeIncome_rw
+        let nthDay_tvl = initTVL * (1+TVLGrowRate/30*d)
+        let rand = Math.random()
+        let todayVolEstimation = tradevol_lower + rand * (tradevol_upper - tradevol_lower)
+        
+        let feeIncome_rw = (rawLq / nthDay_tvl) * todayVolEstimation * (1+TVLGrowRate/30*d) * fee_rate * 0.01
+        feeIncome_raw_accu += feeIncome_rw
 
-            let rawIL_fee = rawIL + feeIncome_raw_accu
-            
+        let rawIL_fee = rawIL + feeIncome_raw_accu
+        
 
 
-            let ilpc = getILPriceChange(initialPrice,curp,upper,lower,initialAmtEth,initialAmtUsd)
-            let newAssetValue = ilpc.newAssetValue
-            if(newAssetValue<0)
-                newAssetValue=0
-            
-            let hedge_price = initialPrice
-            let h_eth = (initialCapital*hedge_rto) / initialPrice
-            const max_lvg = 10
-            let _lvg = (1 - hedge_rto) / hedge_rto
-            if(_lvg>max_lvg){
-                _lvg = max_lvg
-            }
-            let nominalSz = _lvg*h_eth
-            let uPnL = Math.max( h_eth*hedge_price + (hedge_price - k) * nominalSz , 0 )
-            let fundrate = fundrate_lower + rand * (fundrate_upper - fundrate_lower)
-            let fundrate_income = 0
-            if(uPnL>0.001){
-                fundrate_income =  h_eth * fundrate * hedge_price
-                fundrate_income_accu += fundrate_income
-            }
+        let ilpc = getILPriceChange(initialPrice,curp,upper,lower,initialAmtEth,initialAmtUsd)
+        let newAssetValue = ilpc.newAssetValue
+        if(newAssetValue<0)
+            newAssetValue=0
+        
+        let hedge_price = initialPrice
+        let h_eth = (initialCapital*hedge_rto) / initialPrice
+        const max_lvg = 10
+        let _lvg = (1 - hedge_rto) / hedge_rto
+        if(_lvg>max_lvg){
+            _lvg = max_lvg
+        }
+        let nominalSz = _lvg*h_eth
+        let uPnL = Math.max( h_eth*hedge_price + (hedge_price - k) * nominalSz , 0 )
+        
 
-            let hedged_asset = newAssetValue + uPnL + fundrate_income_accu
-            
-            
-            let feeIncome = (initialLq / nthDay_tvl) * todayVolEstimation * (1+TVLGrowRate/30*d) * fee_rate * 0.01
-            feeIncome_accu += feeIncome
+        let hedged_asset = newAssetValue + uPnL + fundrate_income_accu
+        
+        let curCapital = hedged_asset + feeIncome_accu
+        scatter_points.push([d,k,curCapital])
 
-            let curCapital = hedged_asset + feeIncome_accu
-            scatter_points.push([d,k,curCapital])
+        //console.log(`day ${d} price${k} asset=${newAssetValue} fee ${feeIncome_accu} heg ${(uPnL+fundrate_income_accu)} total ${curCapital}` )
 
-            //console.log(`day ${d} price${k} asset=${newAssetValue} fee ${feeIncome_accu} heg ${(uPnL+fundrate_income_accu)} total ${curCapital}` )
-
-            
-            if(rawIL_fee>profithigh){
-                profithigh=rawIL_fee
-            }
-            if(newAssetValue>profithigh){
-                profithigh=newAssetValue
-            }
-            if(curCapital>profithigh){
-                profithigh=curCapital
-            }
+        
+        if(rawIL_fee>profithigh){
+            profithigh=rawIL_fee
+        }
+        if(newAssetValue>profithigh){
+            profithigh=newAssetValue
+        }
+        if(curCapital>profithigh){
+            profithigh=curCapital
         }
     }
 }

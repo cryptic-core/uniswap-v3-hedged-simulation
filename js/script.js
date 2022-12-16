@@ -20,10 +20,8 @@ const init = () => {
 	const sliders = document.getElementsByClassName("range__slider")
 	for (let i = 0; i < sliders.length; i++){
 		let sld = sliders[i]
-		console.log(sld);
 		// // Text which will show the value of the range slider.
 		const sliderValue = sld.querySelector(".length__title")
-		console.log(sliderValue);
 		// Using Event Listener to apply the fill and also change the value of the text.
 		sld.querySelector("input").addEventListener("input", event => {
 			sliderValue.setAttribute("data-length", event.target.value);
@@ -36,14 +34,14 @@ const init = () => {
 	let cb = document.getElementsByClassName("btn_container")
 	// simulate click
 	cb[0].getElementsByTagName("button").Simulate.addEventListener("click", () => {
-		toggleChartData(hedgedsel,true)
+		toggleChartData()
 	})
-
-	cb[0].getElementsByTagName("button").Plus.addEventListener("click", () => {
-		toggleChartData(hedgedsel,true)
+	
+	cb[1].getElementsByTagName("button")[0].addEventListener("click", () => {
+	 	toggleChartData()
 	})
-	cb[0].getElementsByTagName("button").Minus.addEventListener("click", () => {
-		toggleChartData(hedgedsel,true)
+	cb[1].getElementsByTagName("button")[1].addEventListener("click", () => {
+		toggleChartData()
 	})
 }
 window.addEventListener('load', ()=> {
