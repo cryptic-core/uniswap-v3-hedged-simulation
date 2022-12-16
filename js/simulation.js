@@ -187,6 +187,8 @@ const simulate = () => {
     // 借來的，持幣不參與作市
     let longAmt = shortAmt - miningAmt 
     let mining_usd_amt = miningAmt * cprice_matic
+    // AAVE 清算線
+    let liquidation_price = cprice_matic * (2.0-hedgeRatio)
 
     let inkd = getTokenAmountsFromDepositAmounts(cprice_matic, lower, upper, cprice_matic, 1, mining_usd_amt)
     let deltaX = inkd.deltaX
@@ -195,10 +197,11 @@ const simulate = () => {
 
     let tick = 0.01
     let start_price = lower*0.5
-    let end_price = upper*1.3
+    let end_price = liquidation_price * 1.1
     let num_steps = parseInt((end_price-start_price)/tick)
     
     let start_lose_money_point = -1
+    let liquidation_point = -1
     for(let k = 1;k<num_steps;k++){
         let P = start_price + tick * k
         //當前經過 IL 計算之後部位剩餘顆數
@@ -212,8 +215,13 @@ const simulate = () => {
         scatter_points.push([P.toFixed(3),hedged_res])
         
         if(start_lose_money_point<0){
-            if(hedged_res<initCapital){
-                start_lose_money_point = k
+            if(hedged_res<=initCapital){
+                start_lose_money_point = k-1
+            }
+        }
+        if(liquidation_point<0){
+            if(P>=liquidation_price){
+                liquidation_point = k-1
             }
         }
         
@@ -227,14 +235,24 @@ const simulate = () => {
     }
 
     
-    below_zero.push({
-        gt: start_lose_money_point,
-        lt: num_steps,
-        color: 'rgba(0, 0, 180, 0.4)'
-    })
-    below_zero_line.push({
-        xAxis:start_lose_money_point,
-    })
+    below_zero.push(
+        {
+            gt: liquidation_point,
+            lt: num_steps,
+            color: 'rgba(255, 0, 0, 0.4)'
+        },
+        {
+            gt: start_lose_money_point,
+            lt: liquidation_point,
+            color: 'rgba(0, 0, 180, 0.4)'
+        },
+    
+    )
+    below_zero_line.push(
+        {
+            xAxis:liquidation_point,
+        }
+    )
     console.log(below_zero);
 }
 
