@@ -66,55 +66,57 @@ const getILPriceChange = (
 const chart_opt_with_param = (xTitle,yTitle,zTitle,data,profitlow,profithigh) => {
         
     return {
-    "animation": true,
-    "animationThreshold": 2000,
-    "animationDuration": 1000,
-    "animationEasing": "cubicOut",
-    "animationDelay": 0,
-    "animationDurationUpdate": 300,
-    "animationEasingUpdate": "cubicOut",
-    "animationDelayUpdate": 0,
-    xAxis: {
-        type: 'category',
-        boundaryGap: false
-      },
-    yAxis: {
-        type: 'value',
-        boundaryGap: [0, '30%']
-    },
-    visualMap: {
-        type: 'piecewise',
-        show: false,
-        dimension: 0,
-        seriesIndex: 0,
-        pieces:below_zero
-    },
-    "series": [
-        {
-            type: 'line',
-            smooth: 0.6,
-            symbol: 'none',
-            lineStyle: {
-                color: '#5470C6',
-                width: 5
-            },
-            markLine: {
-                symbol: ['none', 'none'],
-                label: { show: false },
-                data: below_zero_line
-            },
-            areaStyle: {},
-            "data": data,
-            "label": {
-                "show": false,
-                "position": "top",
-                "margin": 8
+        "animation": true,
+        "animationThreshold": 2000,
+        "animationDuration": 1000,
+        "animationEasing": "cubicOut",
+        "animationDelay": 0,
+        "animationDurationUpdate": 300,
+        "animationEasingUpdate": "cubicOut",
+        "animationDelayUpdate": 0,
+        xAxis: {
+            type: 'category',
+            boundaryGap: false
+        },
+        yAxis: {
+            type: 'value',
+            boundaryGap: [0, '30%']
+        },
+        visualMap: {
+            type: 'piecewise',
+            show: false,
+            dimension: 0,
+            seriesIndex: 0,
+            pieces:below_zero
+        },
+        "series": [
+            {
+                type: 'line',
+                smooth: 0.6,
+                symbol: 'none',
+                lineStyle: {
+                    color: '#5470C6',
+                    width: 5
+                },
+                markLine: {
+                    symbol: ['none', 'none'],
+                    label: { show: false },
+                    data: below_zero_line
+                },
+                areaStyle: {},
+                "data": data,
+                "label": {
+                    "show": false,
+                    "position": "top",
+                    "margin": 8
+                }
             }
-        }
-    ],
-
-
-    }
+        ],
+    
+        tooltip: {
+            trigger: 'axis'
+        },
+    }       
 }
 
 const simulate = () => {
