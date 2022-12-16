@@ -1,7 +1,4 @@
 var chart_d = null
-var scatter_points_raw = []
-var scatter_points_raw_fee = []
-var scatter_points_hdeged = []
 var scatter_points = []
 
 var profitlow = 0
@@ -76,35 +73,47 @@ const chart_opt_with_param = (xTitle,yTitle,zTitle,data,profitlow,profithigh) =>
     "animationDurationUpdate": 300,
     "animationEasingUpdate": "cubicOut",
     "animationDelayUpdate": 0,
-    "color": [
-        "#c23531",
-        "#2f4554",
-        "#61a0a8",
-        "#d48265",
-        "#749f83",
-        "#ca8622",
-        "#bda29a",
-        "#6e7074",
-        "#546570",
-        "#c4ccd3",
-        "#f05b72",
-        "#ef5b9c",
-        "#f47920",
-        "#905a3d",
-        "#fab27b",
-        "#2a5caa",
-        "#444693",
-        "#726930",
-        "#b2d235",
-        "#6d8346",
-        "#ac6767",
-        "#1d953f",
-        "#6950a1",
-        "#918597"
-    ],
+    xAxis: {
+        type: 'category',
+        boundaryGap: false
+      },
+    yAxis: {
+        type: 'value',
+        boundaryGap: [0, '30%']
+    },
+    visualMap: {
+        type: 'piecewise',
+        show: false,
+        dimension: 0,
+        seriesIndex: 0,
+        pieces: [
+          {
+            gt: 1,
+            lt: 3,
+            color: 'rgba(0, 0, 180, 0.4)'
+          },
+          {
+            gt: 5,
+            lt: 7,
+            color: 'rgba(0, 0, 180, 0.4)'
+          }
+        ]
+    },
     "series": [
         {
-            "type": "scatter3D",
+            type: 'line',
+            smooth: 0.6,
+            symbol: 'none',
+            lineStyle: {
+                color: '#5470C6',
+                width: 5
+            },
+            markLine: {
+                symbol: ['none', 'none'],
+                label: { show: false },
+                data: [{ xAxis: 1 }, { xAxis: 3 }]
+            },
+            areaStyle: {},
             "data": data,
             "label": {
                 "show": false,
@@ -113,127 +122,8 @@ const chart_opt_with_param = (xTitle,yTitle,zTitle,data,profitlow,profithigh) =>
             }
         }
     ],
-    "legend": [
-        {
-            "data": [
-                ""
-            ],
-            "selected": {},
-            "show": true,
-            "padding": 5,
-            "itemGap": 10,
-            "itemWidth": 25,
-            "itemHeight": 14
-        }
-    ],
-    "tooltip": {
-        "show": true,
-        "trigger": "item",
-        "triggerOn": "mousemove|click",
-        "axisPointer": {
-            "type": "line"
-        },
-        "showContent": true,
-        "alwaysShowContent": false,
-        "showDelay": 0,
-        "hideDelay": 100,
-        "textStyle": {
-            "fontSize": 14
-        },
-        "borderWidth": 0,
-        "padding": 5
-    },
-    "visualMap": [
-        {
-            "show": true,
-            "type": "continuous",
-            "min": profitlow,
-            "max": profithigh,
-            "inRange": {
-                "color": [
-                    "#1710c0",
-                    "#0b9df0",
-                    "#00fea8",
-                    "#00ff0d",
-                    "#f5f811",
-                    "#f09a09",
-                    "#fe0300"
-                ]
-            },
-            "calculable": true,
-            "inverse": false,
-            "splitNumber": 5,
-            "dimension": 2,
-            "orient": "vertical",
-            "top": "10",
-            "showLabel": true,
-            "itemWidth": 20,
-            "itemHeight": 140,
-            "borderWidth": 0
-        },
-        {
-            "show": true,
-            "type": "continuous",
-            "min": 0,
-            "max": 1.2,
-            "inRange": {
-                "symbolSize": [
-                    10,
-                    10
-                ]
-            },
-            "calculable": true,
-            "inverse": false,
-            "splitNumber": 5,
-            "dimension": 4,
-            "orient": "vertical",
-            "bottom": "10",
-            "showLabel": true,
-            "itemWidth": 20,
-            "itemHeight": 140,
-            "borderWidth": 0
-        }
-    ],
-    "xAxis3D": {
-        "name": xTitle,
-        "nameGap": 20,
-        "type": "value",
-        "axisLabel": {
-            "margin": 8
-        }
-    },
-    "yAxis3D": {
-        "name": yTitle,
-        "nameGap": 20,
-        "type": "value",
-        "axisLabel": {
-            "margin": 8
-        }
-    },
-    "zAxis3D": {
-        "name": zTitle,
-        "nameGap": 20,
-        "type": "value",
-        "axisLabel": {
-            "margin": 8
-        }
-    },
-    "grid3D": {
-        "boxWidth": 100,
-        "boxHeight": 100,
-        "boxDepth": 100,
-        "viewControl": {
-            "autoRotate": false,
-            "autoRotateSpeed": 10,
-            "rotateSensitivity": 1
-        }
-    },
-    "title": [
-        {
-            "padding": 5,
-            "itemGap": 10
-        }
-    ]
+
+
     }
 }
 
@@ -242,11 +132,11 @@ const simulate = () => {
         chart_d = echarts.init(document.getElementById('assetchart'), 'white', {renderer: 'canvas'})
     }
     // do simulate
-    let initialCapital = 5000
-    let initialPrice = 1208
+    let initialCapital = 10000
+    let initialPrice = 0.89
     let USD_Price = 1
-    let upper = 1500
-    let lower = 900
+    let upper = 1.1
+    let lower = 0.81
     let fee_rate = 0.3
     let initTVL = 159.27 * 1000000
     let TVLGrowRate = 0.05
@@ -280,11 +170,8 @@ const simulate = () => {
         }
     }
     
-    scatter_points_raw = []
-    scatter_points_raw_fee = []
     scatter_points = []
-    scatter_points_hdeged = []
-    
+    below_zero = [{ xAxis: 1 }, { xAxis: 3 }] // start price end
 
     let rwkd = getTokenAmountsFromDepositAmounts(initialPrice,lower,upper,initialPrice,USD_Price,initialCapital)
     let rawAmtEth = rwkd.deltaX
@@ -312,7 +199,7 @@ const simulate = () => {
             let rawIL = rawlpc.newAssetValue
             if(rawIL<0)
                 rawIL=0
-            scatter_points_raw.push([d,k,rawIL])
+            scatter_points.push([d,k,rawIL])
 
 
             let nthDay_tvl = initTVL * (1+TVLGrowRate/30*d)
@@ -323,7 +210,7 @@ const simulate = () => {
             feeIncome_raw_accu += feeIncome_rw
 
             let rawIL_fee = rawIL + feeIncome_raw_accu
-            scatter_points_raw_fee.push([d,k,rawIL_fee])
+            
 
 
             let ilpc = getILPriceChange(initialPrice,curp,upper,lower,initialAmtEth,initialAmtUsd)
@@ -348,7 +235,7 @@ const simulate = () => {
             }
 
             let hedged_asset = newAssetValue + uPnL + fundrate_income_accu
-            scatter_points_hdeged.push([d,k,hedged_asset])
+            
             
             let feeIncome = (initialLq / nthDay_tvl) * todayVolEstimation * (1+TVLGrowRate/30*d) * fee_rate * 0.01
             feeIncome_accu += feeIncome
@@ -372,38 +259,8 @@ const simulate = () => {
     }
 }
 
-const toggleChartData = (visualType,froceRecalc=false) => {
-    
-    if(scatter_points_raw.length<1){
-        simulate()
-    }
-    if(froceRecalc){
-        simulate()
-    }
-    switch(visualType){
-        case `raw`:{
-            console.log(`Show non Hedged`);
-            let opt1 = chart_opt_with_param("Day","Price","Asset Value",scatter_points_raw,profitlow,profithigh)
-            chart_d.setOption(opt1)
-        }
-        break
-        case `rawwithfee`:{
-            console.log(`Show non Hedged with fee`);
-            let opt1 = chart_opt_with_param("Day","Price","Asset Value",scatter_points_raw_fee,profitlow,profithigh)
-            chart_d.setOption(opt1)
-        }
-        break
-        case `hedge`:{
-            console.log(`Show Hedged no fee`);
-            let opt1 = chart_opt_with_param("Day","Price","Asset Value",scatter_points_hdeged,profitlow,profithigh)
-            chart_d.setOption(opt1)
-        }
-        break
-        case `hedgeandfee`:{
-            console.log(`Show Hedged and fee`);
-            let opt1 = chart_opt_with_param("Day","Price","Asset Value",scatter_points,profitlow,profithigh)
-            chart_d.setOption(opt1)
-        }
-        break
-    }
+const toggleChartData = () => {
+    simulate()
+    let opt1 = chart_opt_with_param("Day","Price","Asset Value",scatter_points,profitlow,profithigh)
+    chart_d.setOption(opt1)
 }

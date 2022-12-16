@@ -2,7 +2,7 @@ NodeList.prototype[Symbol.iterator] = Array.prototype[Symbol.iterator];
 HTMLCollection.prototype[Symbol.iterator] = Array.prototype[Symbol.iterator];
 
 const init = () => {
-	toggleChartData(`hedgeandfee`)
+	toggleChartData()
 	const sliderProps = {
 		fill: "#0B1EDF",
 		background: "rgba(255, 255, 255, 0.214)",
@@ -20,9 +20,10 @@ const init = () => {
 	const sliders = document.getElementsByClassName("range__slider")
 	for (let i = 0; i < sliders.length; i++){
 		let sld = sliders[i]
-		
+		console.log(sld);
 		// // Text which will show the value of the range slider.
 		const sliderValue = sld.querySelector(".length__title")
+		console.log(sliderValue);
 		// Using Event Listener to apply the fill and also change the value of the text.
 		sld.querySelector("input").addEventListener("input", event => {
 			sliderValue.setAttribute("data-length", event.target.value);
@@ -30,21 +31,23 @@ const init = () => {
 		});
 		applyFill(sld.querySelector("input"),sliderValue)
 	}
-	
-	document.getElementById("visualtype").onchange = (e)=>{
-		let hedgedsel = document.getElementById("visualtype").value
-		toggleChartData(hedgedsel)
-	}
-	
+
+
+	let cb = document.getElementsByClassName("btn_container")
 	// simulate click
-	document.getElementsByTagName("button").Simulate.addEventListener("click", () => {
-		let hedgedsel = document.getElementById("visualtype").value
+	cb[0].getElementsByTagName("button").Simulate.addEventListener("click", () => {
+		toggleChartData(hedgedsel,true)
+	})
+
+	cb[0].getElementsByTagName("button").Plus.addEventListener("click", () => {
+		toggleChartData(hedgedsel,true)
+	})
+	cb[0].getElementsByTagName("button").Minus.addEventListener("click", () => {
 		toggleChartData(hedgedsel,true)
 	})
 }
 window.addEventListener('load', ()=> {
 	init()
-	
 })
 
 
