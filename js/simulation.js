@@ -128,7 +128,7 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
     }
     // do simulate
     let initCapital = 10000
-    let cprice_matic = 0.89
+    let cprice_matic = 1200
     let USD_Price = 1
     let hedgeRatio = 0.05 // 做空比率，0.7代表留了30%的上漲空間
     let miningRatio = 0.6 // 拿來做 uniswap LP 比率，增加部位中性程度
@@ -185,21 +185,31 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
     let hedge_usd_amt = initCapital - mining_usd_amt
     
     // 預設1%越寬越少推估的
-    const fee_rate_estimated_1 = 0.001915 * cnt / range_perc * mining_usd_amt * 10
+    const fee_rate_estimated_1 = 0.001915 * cnt / range_perc * mining_usd_amt
 
     let inkd = getTokenAmountsFromDepositAmounts(cprice_matic, lower, upper, cprice_matic, 1, mining_usd_amt)
     let deltaX = inkd.deltaX
     let deltaY = inkd.deltaY
-    let rawLq = calcLiquidity(initialPrice,upper,lower,deltaX,deltaY)
 
-    let tick = 0.01
+    let tick = 1
     let start_price = lower*0.5
     let end_price = upper * 1.5
     let num_steps = parseInt((end_price-start_price)/tick)
-    
+    let tolower = getILPriceChange(cprice_matic,lower,upper,lower,deltaX,deltaY)
+    const constant_hte_p = 1000*1000
+    let hte_price = constant_hte_p / cprice_matic
+    let amt_hte =  hedge_usd_amt/hte_price
+
     let start_lose_money_point = -1
     let liquidation_point = -1
     let entry_price = -1
+
+    // hte 專用，n個水平線以下
+    let prvdif = 0
+    let bzPair = [] // open/close pair
+    let hte_below_cap = []
+    // end of hte
+
     for(let k = 1;k<num_steps;k++){
         let P = start_price + tick * k
         //當前經過 IL 計算之後部位剩餘顆數
@@ -210,7 +220,8 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
             _res =rawlpc.Ly2 + rawlpc.Lx2 * P
         }
         _res += fee_rate_estimated_1
-        console.log(`${_res} + ${fee_rate_estimated_1}`);
+        
+        
         switch(hedgetype){
             case "noHedge":{
                 _res += hedge_usd_amt
@@ -221,12 +232,70 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
                 }
             }break;
             case "futureHedge":{
+                
+                let margin = hedge_usd_amt + (cprice_matic - P) * tolower.Lx2
+                let bLiqudate = (margin / hedge_usd_amt)<0.33
+                if(bLiqudate){
+                    if(liquidation_point<0){
+                        liquidation_point = k-1
+                    }
+                    margin = 0
+                }
+                _res += margin
+                if(start_lose_money_point<0){
+                    if(_res<initCapital){
+                        start_lose_money_point = k-1
+                    }
+                }
+                if(entry_price<0){
+                    if(P>=cprice_matic){
+                        entry_price = k-1
+                    }
+                }
+            }break;
+            case "hteHedge":{
+                hte_price = constant_hte_p / P
+                _res += amt_hte * hte_price
+                
+                // hte 專用
+                let curcapdif = parseFloat(_res-initCapital)
+                
+                if(k==1){
+                    if(curcapdif<0){
+                        bzPair.push(k)
+                    }
+                }
+                if(k==num_steps-1){
+                    if(bzPair.length===1){
+                        bzPair.push(k)
+                        hte_below_cap.push(bzPair)
+                    }
+                }
+                if(curcapdif * prvdif < 0){
+                    if((prvdif<=0)&&(curcapdif>0)){ //close
+                        if(bzPair.length===1){
+                            bzPair.push(k)
+                            hte_below_cap.push(bzPair)
+                            bzPair = []
+                        }
+                    }else if((prvdif>0)&&(curcapdif<=0)){ // open
+                        if(bzPair.length===0){
+                            bzPair.push(k)
+                        }
+                    }
+                }
+                prvdif = curcapdif
+                if(entry_price<0){
+                    if(P>=cprice_matic){
+                        entry_price = k-1
+                    }
+                }
             }break;
         }
-        scatter_points.push([P.toFixed(3),_res])
+        scatter_points.push([P.toFixed(0),_res])
     }
-
-
+    
+    
     switch(hedgetype){
         case "noHedge":{
             below_zero.push(
@@ -238,6 +307,22 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
             )
         }break;
         case "futureHedge":{
+            if(liquidation_point<0){
+                liquidation_point = num_steps
+            }
+            below_zero.push(
+                {
+                    gt: liquidation_point,
+                    lt: num_steps,
+                    color: 'rgba(255, 0, 0, 0.4)'
+                },
+                {
+                    gt: start_lose_money_point,
+                    lt: liquidation_point,
+                    color: 'rgba(0, 0, 180, 0.4)'
+                },
+            )
+
             below_zero_line.push(
                 {
                     name: 'liquidate',
@@ -255,7 +340,17 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
                 }
             )
         }break;
-        
+        case "hteHedge":{
+            for(let pr of hte_below_cap){
+                below_zero.push(
+                    {
+                        gt: pr[0],
+                        lt: pr[1],
+                        color: 'rgba(0, 0, 180, 0.4)'
+                    },
+                )
+            }
+        }break;
     }
     
 }

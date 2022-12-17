@@ -43,11 +43,11 @@ const init = () => {
 	})
 	
 	cb[1].getElementsByTagName("button")[0].addEventListener("click", () => {
-		dayCnt++
+		dayCnt+=5
 	 	toggleChartData(dayCnt,hedgedsel)
 	})
 	cb[1].getElementsByTagName("button")[1].addEventListener("click", () => {
-		dayCnt-- 
+		dayCnt -=5 
 		dayCnt = Math.max(dayCnt,0)
 		toggleChartData(dayCnt,hedgedsel)
 	})
