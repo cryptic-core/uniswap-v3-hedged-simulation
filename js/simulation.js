@@ -122,7 +122,7 @@ const chart_opt_with_param = (day,data) => {
     }       
 }
 
-const simulate = (cnt=0) => {
+const simulate = (cnt=0,hedgetype="noHedge") => {
     if(!chart_d){
         chart_d = echarts.init(document.getElementById('assetchart'), 'white', {renderer: 'canvas'})
     }
@@ -152,15 +152,11 @@ const simulate = (cnt=0) => {
             range_perc = sld.querySelector("input").value
         }else if(sldtitle.includes('Lower Percentage') ){
             lower = cprice_matic * (1 - sld.querySelector("input").value*0.01)
-        }else if(sldtitle.includes('Borrow Ratio')){
+        }else if(sldtitle.includes('Short Ratio')){
             hedgeRatio = sld.querySelector("input").value*0.01
-        }else if(sldtitle.includes('LP Amount Ratio')){
-            miningRatio = sld.querySelector("input").value*0.01
         }
     }
     
-    
-
     const input_txt = document.getElementsByClassName("inputbox")
     for (let i = 0; i < input_txt.length; i++){
         let inp = input_txt[i]
@@ -184,20 +180,12 @@ const simulate = (cnt=0) => {
     below_zero = [] // start below zero price till chart end
     below_zero_line = []
 
-    // 一開始借幣數量
-    let hedgeUSDAmt = initCapital * hedgeRatio
-    // 借來的顆數
-    let shortAmt = hedgeUSDAmt/cprice_matic
-    // 借來的顆數實際拿下去作市的數量
-    let miningAmt = shortAmt*miningRatio
-    // 借來的，持幣不參與作市
-    let longAmt = shortAmt - miningAmt 
-    let mining_usd_amt = miningAmt * cprice_matic
-    // AAVE 清算線
-    let liquidation_price = cprice_matic * (2.0-hedgeRatio)
-
+    // 實際拿下去作市的數量
+    let mining_usd_amt = initCapital*(1-hedgeRatio)
+    let hedge_usd_amt = initCapital - mining_usd_amt
+    
     // 預設1%越寬越少推估的
-    const fee_rate_estimated_1 = 0.001915 * cnt / range_perc * miningAmt
+    const fee_rate_estimated_1 = 0.001915 * cnt / range_perc * mining_usd_amt * 10
 
     let inkd = getTokenAmountsFromDepositAmounts(cprice_matic, lower, upper, cprice_matic, 1, mining_usd_amt)
     let deltaX = inkd.deltaX
@@ -206,7 +194,7 @@ const simulate = (cnt=0) => {
 
     let tick = 0.01
     let start_price = lower*0.5
-    let end_price = liquidation_price * 1.1
+    let end_price = upper * 1.5
     let num_steps = parseInt((end_price-start_price)/tick)
     
     let start_lose_money_point = -1
@@ -217,67 +205,64 @@ const simulate = (cnt=0) => {
         //當前經過 IL 計算之後部位剩餘顆數
         let P_clamp = Math.min( Math.max(P,lower),upper)
         let rawlpc = getILPriceChange(cprice_matic,P_clamp,upper,lower,deltaX,deltaY)
-        let amt1 = rawlpc.Lx2
-        let amt2 = rawlpc.Ly2
-        curamt = amt1+amt2/P + longAmt
-        let hedged_res = initCapital - (shortAmt - curamt)*P
-        hedged_res += fee_rate_estimated_1
-        scatter_points.push([P.toFixed(3),hedged_res])
-        
-        if(start_lose_money_point<0){
-            if(hedged_res<=initCapital){
-                start_lose_money_point = k-1
-            }
+        let _res = rawlpc.newAssetValue
+        if(P<upper){
+            _res =rawlpc.Ly2 + rawlpc.Lx2 * P
         }
-        if(liquidation_point<0){
-            if(P>=liquidation_price){
-                liquidation_point = k-1
-            }
+        _res += fee_rate_estimated_1
+        console.log(`${_res} + ${fee_rate_estimated_1}`);
+        switch(hedgetype){
+            case "noHedge":{
+                _res += hedge_usd_amt
+                if(start_lose_money_point<0){
+                    if(_res>initCapital){
+                        start_lose_money_point = k-1
+                    }
+                }
+            }break;
+            case "futureHedge":{
+            }break;
         }
-        if(entry_price<0){
-            if(P>=cprice_matic){
-                entry_price = k-1
-            }
-        }
-        
+        scatter_points.push([P.toFixed(3),_res])
     }
 
-    
-    below_zero.push(
-        {
-            gt: liquidation_point,
-            lt: num_steps,
-            color: 'rgba(255, 0, 0, 0.4)'
-        },
-        {
-            gt: start_lose_money_point,
-            lt: liquidation_point,
-            color: 'rgba(0, 0, 180, 0.4)'
-        },
-    
-    )
-    below_zero_line.push(
-        {
-            name: 'liquidate',
-            xAxis:liquidation_point,
-            label: { 
-                formatter: 'liquidate',
-            },
-        },
-        {
-            name: 'entryPrice',
-            xAxis:entry_price,
-            label: { 
-                formatter: 'entryPrice',
-            },
-        }
-    )
+
+    switch(hedgetype){
+        case "noHedge":{
+            below_zero.push(
+                {
+                    gt: 0,
+                    lt: start_lose_money_point,
+                    color: 'rgba(0, 0, 180, 0.4)'
+                },
+            )
+        }break;
+        case "futureHedge":{
+            below_zero_line.push(
+                {
+                    name: 'liquidate',
+                    xAxis:liquidation_point,
+                    label: { 
+                        formatter: 'liquidate',
+                    },
+                },
+                {
+                    name: 'entryPrice',
+                    xAxis:entry_price,
+                    label: { 
+                        formatter: 'entryPrice',
+                    },
+                }
+            )
+        }break;
+        
+    }
     
 }
 
-const toggleChartData = (cnt) => {
-    simulate(cnt)
-    console.log(cnt);
+
+const toggleChartData = (cnt,hedgetype="noHedge") => {
+    simulate(cnt,hedgetype)
     let opt1 = chart_opt_with_param(cnt,scatter_points)
     chart_d.setOption(opt1)
 }

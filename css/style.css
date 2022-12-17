@@ -347,6 +347,18 @@ button {
   flex-direction: row;
   justify-content: flex-start;
 }
+.chk_container{
+  display: block;
+  position: relative;
+  padding-left: 35px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  font-size: 22px;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
 
 .btnplus {
   border-radius: 8px;

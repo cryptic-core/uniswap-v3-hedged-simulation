@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <link rel="shortcut icon" href="#"/>
-    <title>Polygon UniswapV3+AAVE Simulation</title>
+    <title>UniswapV3 Hedge Simulation</title>
     <link rel="stylesheet" href="css/style.css">
     <script type="text/javascript" src="https://assets.pyecharts.org/assets/echarts.min.js"></script>
     <script type="text/javascript" src="https://assets.pyecharts.org/assets/echarts-gl.min.js"></script>
@@ -11,7 +11,7 @@
     <script src="js/script.js"></script>
 </head>
 <header>
-    <h2 style="color:#fff">Polygon UniswapV3+AAVE Simulation</h2>
+    <h2 style="color:#fff">UniswapV3 Hedge Simulation</h2>
 </header>
 <section>
     <div id="assetchart" class="chart-container" >
@@ -30,12 +30,8 @@
         </div>
         
         <div class="length range__slider" data-min="0" data-max="100">
-            <div class="length__title field-title" data-length='0'>Borrow Ratio &nbsp&nbsp</div>
+            <div class="length__title field-title" data-length='0'>Short Ratio &nbsp&nbsp</div>
             <input id="slider" class="slider" type="range" min="0" max="100" value="70" />
-        </div>
-        <div class="length range__slider" data-min="0" data-max="100">
-            <div class="length__title field-title" data-length='0'>LP Amount Ratio &nbsp&nbsp</div>
-            <input id="slider" class="slider" type="range" min="0" max="100" value="60" />
         </div>
         <div class="length range__slider" data-min="1" data-max="100">
             <div class="length__title field-title" data-length='0'>Upper Percentage&nbsp&nbsp</div>
@@ -48,11 +44,17 @@
         <div class="btn_container">
             <button class="btn generate" id="Simulate">Simulate</button>
         </div>
+        <div class="length selectoption" >
+            <select id="visualtype" >
+                <option value="noHedge">No Hedge</option>
+                <option value="futureHedge">Futures Hedge</option>
+                <option value="hteHedge">HTE Hedge</option>
+            </select>
+        </div>
         <div class="btn_container">
             <button class="btnplus" id="Plus">+</button>
             <button class="btnplus" id="Minus">-</button>
         </div>
-        
     </div>
 </aside>
 <footer></footer>
