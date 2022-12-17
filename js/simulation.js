@@ -231,6 +231,10 @@ const simulate = (cnt=0) => {
         }
         if(liquidation_point<0){
             if(P>=liquidation_price){
+                // liquidate
+                console.log(`liquidate @${P}`);
+                hedged_res = curamt * P
+                hedged_res += fee_rate_estimated_1
                 liquidation_point = k-1
             }
         }
