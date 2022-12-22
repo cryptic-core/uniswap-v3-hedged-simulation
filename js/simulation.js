@@ -530,6 +530,14 @@ const simulate_aave_neutral = (cnt)=>{
     real_upper *= real_upper
     let real_lower = rawLq / (deltaX+rawLq/Math.sqrt(cprice_matic))
     real_lower *= real_lower
+    let lower_idx = 0
+    let upper_idx = 0
+
+    // n個水平線以下
+    let prvdif = 0
+    let bzPair = [] // open/close pair
+    let hte_below_cap = []
+    // end of hte
     for(let k = 1;k<num_steps;k++){
         let P = start_price + tick * k
 
@@ -552,17 +560,40 @@ const simulate_aave_neutral = (cnt)=>{
         hedged_res += curusd
         scatter_points.push([P.toFixed(3),hedged_res])
         
-        if(start_lose_money_point<0){
-            if(hedged_res<=initCapital){
-                start_lose_money_point = k-1
+        
+        //#region below zero
+        let curcapdif = parseFloat(hedged_res-initCapital)
+        if(k==1){
+            if(curcapdif<0){
+                bzPair.push(k)
             }
         }
+        if(k==num_steps-1){
+            if(bzPair.length===1){
+                bzPair.push(k)
+                hte_below_cap.push(bzPair)
+            }
+        }
+        if(curcapdif * prvdif < 0){
+            if((prvdif<=0)&&(curcapdif>0)){ //close
+                if(bzPair.length===1){
+                    bzPair.push(k)
+                    hte_below_cap.push(bzPair)
+                    bzPair = []
+                }
+            }else if((prvdif>0)&&(curcapdif<=0)){ // open
+                if(bzPair.length===0){
+                    bzPair.push(k)
+                }
+            }
+        }
+        prvdif = curcapdif
+        //#endregion
+
         if(liquidation_point<0){
             if(P>=liquidation_price){
                 // liquidate
                 console.log(`liquidate @${P}`);
-                hedged_res = curamt * P
-                hedged_res += fee_rate_estimated_1
                 liquidation_point = k-1
             }
         }
@@ -571,22 +602,28 @@ const simulate_aave_neutral = (cnt)=>{
                 entry_price = k-1
             }
         }
+        if(lower_idx<1){
+            if(P>=lower){
+                lower_idx = k-1
+            }
+        }
+        if(upper_idx<1){
+            if(P>=upper){
+                upper_idx = k-1
+            }
+        }
     }
 
     
-    below_zero.push(
-        {
-            gt: liquidation_point,
-            lt: num_steps,
-            color: 'rgba(255, 0, 0, 0.4)'
-        },
-        {
-            gt: start_lose_money_point,
-            lt: liquidation_point,
-            color: 'rgba(0, 0, 180, 0.4)'
-        },
-    
-    )
+    for(let pr of hte_below_cap){
+        below_zero.push(
+            {
+                gt: pr[0],
+                lt: pr[1],
+                color: 'rgba(0, 0, 180, 0.4)'
+            },
+        )
+    }
     below_zero_line.push(
         {
             name: 'liquidate',
@@ -600,6 +637,20 @@ const simulate_aave_neutral = (cnt)=>{
             xAxis:entry_price,
             label: { 
                 formatter: 'entryPrice',
+            },
+        },
+        {
+            name: 'lower',
+            xAxis:lower_idx,
+            label: { 
+                formatter: 'lower',
+            },
+        },
+        {
+            name: 'upper',
+            xAxis:upper_idx,
+            label: { 
+                formatter: 'upper',
             },
         }
     )
