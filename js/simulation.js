@@ -487,12 +487,15 @@ const simulate_aave_neutral = (cnt)=>{
     // 借幣比率
     let hedgeUSDAmt = initCapital * hedgeRatio
     let inv_usdamt = hedgeUSDAmt * miningRatio
+    // 借來的顆數
+    let shortAmt = inv_usdamt/cprice_matic
     let shortbuff = hedgeUSDAmt - inv_usdamt
     // 反挖的 LP ratio，會比原本的要少
     let invr = getTokenAmountsFromDepositAmounts(cprice_matic, lower, upper, cprice_matic, 1, inv_usdamt)
     let deltaX_inv = invr.deltaX
     let deltaY_inv = invr.deltaY
-    let rawLq_inv = calcLiquidity(cprice_matic,upper,lower,deltaX_inv,deltaY_inv)
+    
+    console.log(`deltaX_inv ${deltaX_inv} deltaY_inv ${deltaY_inv} shortbuff:${shortbuff}`)
 
 
 
@@ -503,7 +506,7 @@ const simulate_aave_neutral = (cnt)=>{
     let deltaY = inkd.deltaY
     let rawLq = calcLiquidity(cprice_matic,upper,lower,deltaX,deltaY)
 
-
+    console.log(`deltaX ${deltaX} deltaY ${deltaY}`)
     
     // AAVE 清算線
     let liquidation_price = cprice_matic * (2.0-miningRatio)
@@ -535,10 +538,9 @@ const simulate_aave_neutral = (cnt)=>{
         let rawlpc_inv = getILPriceChange(cprice_matic,P_clamp,upper,lower,deltaX_inv,deltaY_inv)
         let amt1_inv = rawlpc_inv.Lx2
         let amt2_inv = rawlpc_inv.Ly2
-        curamt = amt1_inv+amt2_inv/P
-        let hedged_res = shortbuff + curamt*P
+        curamt = amt1_inv+amt2_inv/P //全部換算成顆數還回去
+        let hedged_res = hedgeUSDAmt - (shortAmt - curamt)*P
         hedged_res += fee_rate_estimated_1
-
 
         //正挖 -- 當前經過 IL 計算之後部位剩餘顆數
         let rawlpc = getILPriceChange(cprice_matic,P_clamp,upper,lower,deltaX,deltaY)
@@ -547,7 +549,8 @@ const simulate_aave_neutral = (cnt)=>{
         curusd = amt1 * P + amt2
         curusd += fee_rate_estimated_2
 
-        scatter_points.push([P.toFixed(3),curusd+hedged_res])
+        hedged_res += curusd
+        scatter_points.push([P.toFixed(3),hedged_res])
         
         if(start_lose_money_point<0){
             if(hedged_res<=initCapital){
@@ -602,6 +605,7 @@ const simulate_aave_neutral = (cnt)=>{
     )
     
 }
+
 const toggleChartData = (cnt,hedgetype="noHedge") => {
     simulate(cnt,hedgetype)
     console.log(cnt);
