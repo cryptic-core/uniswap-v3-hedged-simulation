@@ -56,8 +56,8 @@ const getILPriceChange = (
     let oneOverDeltaP = 1/(Math.sqrt(newPrice)) - 1/(Math.sqrt(price))
     let deltaX = oneOverDeltaP * L
     let deltaY = deltaP * L
-    let Lx2 = amountX + deltaX
-    let Ly2 = amountY + deltaY
+    let Lx2 = Math.max(0,amountX + deltaX) 
+    let Ly2 = Math.max(0,amountY + deltaY)
     let newAssetValue = Lx2 * newPrice + Ly2
     return {newAssetValue,Lx2,Ly2}
 }
@@ -122,7 +122,21 @@ const chart_opt_with_param = (day,data) => {
     }       
 }
 
-const simulate = (cnt=0) => {
+const simulate = (cnt=0,hedgetype="noHedge") => {
+    switch(hedgetype){
+        case "noHedge":{
+            simulate_normal(cnt)
+        }break;
+        case "borrowed":{
+            simulate_aave_borrowed(cnt)
+        }break;
+        case "neutral":{
+            simulate_aave_neutral(cnt)
+        }
+    }
+}
+
+const simulate_normal = (cnt)=> {
     if(!chart_d){
         chart_d = echarts.init(document.getElementById('assetchart'), 'white', {renderer: 'canvas'})
     }
@@ -150,7 +164,134 @@ const simulate = (cnt=0) => {
         if(sldtitle.includes('Upper Percentage') ){
             upper = cprice_matic * (1 + sld.querySelector("input").value*0.01)
             range_perc = sld.querySelector("input").value
-        }else if(sldtitle.includes('Lower Percentage') ){
+            lower = cprice_matic * (1 - sld.querySelector("input").value*0.01)
+        }else if(sldtitle.includes('Borrow Ratio')){
+            hedgeRatio = sld.querySelector("input").value*0.01
+        }else if(sldtitle.includes('LP Amount Ratio')){
+            miningRatio = sld.querySelector("input").value*0.01
+        }
+    }
+    
+    const input_txt = document.getElementsByClassName("inputbox")
+    for (let i = 0; i < input_txt.length; i++){
+        let inp = input_txt[i]
+        let title = inp.getElementsByClassName('field-title')[0].innerText
+        if(title.includes('Initial')){
+            initCapital = inp.getElementsByClassName('result__viewbox')[0].value
+        }else if(title.includes('Current')){
+            cprice_matic = inp.getElementsByClassName('result__viewbox')[0].value
+        }
+    }
+
+    // check input parameters
+    // console.log(`upper ${upper}`);
+    // console.log(`lower ${lower}`);
+    // console.log(`hedgeRatio ${hedgeRatio}`);
+    // console.log(`miningRatio ${miningRatio}`);
+    // console.log(`initCapital ${initCapital}`);
+    // console.log(`initialPrice ${initialPrice}`);
+    
+    scatter_points = []
+    below_zero = [] // start below zero price till chart end
+    below_zero_line = []
+
+    let mining_usd_amt = initCapital
+    
+    // 預設1%越寬越少推估的
+    const fee_rate_estimated_1 = 0.001915 * cnt / range_perc * mining_usd_amt
+
+    let inkd = getTokenAmountsFromDepositAmounts(cprice_matic, lower, upper, cprice_matic, 1, mining_usd_amt)
+    let deltaX = inkd.deltaX
+    let deltaY = inkd.deltaY
+    let rawLq = calcLiquidity(cprice_matic,upper,lower,deltaX,deltaY)
+
+    let tick = 0.01
+    let start_price = lower*0.5
+    let end_price = upper * 1.5
+    let num_steps = parseInt((end_price-start_price)/tick)
+    
+    let start_lose_money_point = -1
+    let liquidation_point = -1
+    let entry_price = -1
+
+    // 逼近真實上下界計算公式
+    let real_upper = (deltaY + rawLq*Math.sqrt(cprice_matic))/rawLq
+    real_upper *= real_upper
+    let real_lower = rawLq / (deltaX+rawLq/Math.sqrt(cprice_matic))
+    real_lower *= real_lower
+    for(let k = 1;k<num_steps;k++){
+        let P = start_price + tick * k
+        //當前經過 IL 計算之後部位剩餘顆數
+        let P_clamp = Math.min( Math.max(P,real_lower),real_upper)
+        let rawlpc = getILPriceChange(cprice_matic,P_clamp,upper,lower,deltaX,deltaY)
+        let newval = rawlpc.Lx2 * P + rawlpc.Ly2
+        newval += fee_rate_estimated_1
+        
+        scatter_points.push([P.toFixed(3),newval])
+        
+        if(start_lose_money_point<0){
+            if(newval>=initCapital){
+                start_lose_money_point = k-1
+            }
+        }
+
+        if(entry_price<0){
+            if(P>=cprice_matic){
+                entry_price = k-1
+            }
+        }
+        
+    }
+    console.log(`start_lose_money_point ${start_lose_money_point}`);
+    below_zero.push(
+        {
+            gt: start_lose_money_point,
+            lt: num_steps,
+            color: 'rgba(0, 0, 180, 0.4)'
+        },
+    
+    )
+    below_zero_line.push(
+        {
+            name: 'entryPrice',
+            xAxis:entry_price,
+            label: { 
+                formatter: 'entryPrice',
+            },
+        }
+    )
+    
+}
+
+
+const simulate_aave_borrowed = (cnt)=>{
+    if(!chart_d){
+        chart_d = echarts.init(document.getElementById('assetchart'), 'white', {renderer: 'canvas'})
+    }
+    // do simulate
+    let initCapital = 10000
+    let cprice_matic = 0.89
+    let USD_Price = 1
+    let hedgeRatio = 0.05 // 做空比率，0.7代表留了30%的上漲空間
+    let miningRatio = 0.6 // 拿來做 uniswap LP 比率，增加部位中性程度
+
+
+    let upper = 1.1
+    let lower = 0.81
+    let fee_rate = 0.3
+    let initTVL = 7.5 * 1000000
+    let range_perc = 0 // 預設1%越寬越少推估的
+    
+
+    const sliders = document.getElementsByClassName("range__slider")
+	for (let i = 0; i < sliders.length; i++){
+		let sld = sliders[i]
+        const sliderValue = sld.querySelector(".length__title")
+        let sliders_txt = sld.getElementsByClassName("length__title")
+        let sldtitle = sliders_txt[0].innerText
+        if(sldtitle.includes('Upper Percentage') ){
+            upper = cprice_matic * (1 + sld.querySelector("input").value*0.01)
+            range_perc = sld.querySelector("input").value
             lower = cprice_matic * (1 - sld.querySelector("input").value*0.01)
         }else if(sldtitle.includes('Borrow Ratio')){
             hedgeRatio = sld.querySelector("input").value*0.01
@@ -160,7 +301,6 @@ const simulate = (cnt=0) => {
     }
     
     
-
     const input_txt = document.getElementsByClassName("inputbox")
     for (let i = 0; i < input_txt.length; i++){
         let inp = input_txt[i]
@@ -212,10 +352,15 @@ const simulate = (cnt=0) => {
     let start_lose_money_point = -1
     let liquidation_point = -1
     let entry_price = -1
+    // 逼近真實上下界計算公式
+    let real_upper = (deltaY + rawLq*Math.sqrt(cprice_matic))/rawLq
+    real_upper *= real_upper
+    let real_lower = rawLq / (deltaX+rawLq/Math.sqrt(cprice_matic))
+    real_lower *= real_lower
     for(let k = 1;k<num_steps;k++){
         let P = start_price + tick * k
         //當前經過 IL 計算之後部位剩餘顆數
-        let P_clamp = Math.min( Math.max(P,lower),upper)
+        let P_clamp = Math.min( Math.max(P,real_lower),real_upper)
         let rawlpc = getILPriceChange(cprice_matic,P_clamp,upper,lower,deltaX,deltaY)
         let amt1 = rawlpc.Lx2
         let amt2 = rawlpc.Ly2
@@ -279,8 +424,186 @@ const simulate = (cnt=0) => {
     
 }
 
-const toggleChartData = (cnt) => {
-    simulate(cnt)
+const simulate_aave_neutral = (cnt)=>{
+    if(!chart_d){
+        chart_d = echarts.init(document.getElementById('assetchart'), 'white', {renderer: 'canvas'})
+    }
+    // do simulate
+    let initCapital = 10000
+    let cprice_matic = 0.89
+    let USD_Price = 1
+    let hedgeRatio = 0.05 // 做空比率，0.7代表留了30%的上漲空間
+    let miningRatio = 0.6 // 拿來做 uniswap LP 比率，增加部位中性程度
+
+
+    let upper = 1.1
+    let lower = 0.81
+    let fee_rate = 0.3
+    let initTVL = 7.5 * 1000000
+    let range_perc = 0 // 預設1%越寬越少推估的
+    
+
+    const sliders = document.getElementsByClassName("range__slider")
+	for (let i = 0; i < sliders.length; i++){
+		let sld = sliders[i]
+        const sliderValue = sld.querySelector(".length__title")
+        let sliders_txt = sld.getElementsByClassName("length__title")
+        let sldtitle = sliders_txt[0].innerText
+        if(sldtitle.includes('Upper Percentage') ){
+            upper = cprice_matic * (1 + sld.querySelector("input").value*0.01)
+            range_perc = sld.querySelector("input").value
+            lower = cprice_matic * (1 - sld.querySelector("input").value*0.01)
+        }else if(sldtitle.includes('Borrow Ratio')){
+            hedgeRatio = sld.querySelector("input").value*0.01
+        }else if(sldtitle.includes('LP Amount Ratio')){
+            miningRatio = sld.querySelector("input").value*0.01
+        }
+    }
+    
+    
+    const input_txt = document.getElementsByClassName("inputbox")
+    for (let i = 0; i < input_txt.length; i++){
+        let inp = input_txt[i]
+        let title = inp.getElementsByClassName('field-title')[0].innerText
+        if(title.includes('Initial')){
+            initCapital = inp.getElementsByClassName('result__viewbox')[0].value
+        }else if(title.includes('Current')){
+            cprice_matic = inp.getElementsByClassName('result__viewbox')[0].value
+        }
+    }
+
+    // check input parameters
+    // console.log(`upper ${upper}`);
+    // console.log(`lower ${lower}`);
+    // console.log(`hedgeRatio ${hedgeRatio}`);
+    // console.log(`miningRatio ${miningRatio}`);
+    // console.log(`initCapital ${initCapital}`);
+    // console.log(`initialPrice ${initialPrice}`);
+    
+    scatter_points = []
+    below_zero = [] // start below zero price till chart end
+    below_zero_line = []
+
+    // 借幣比率
+    let hedgeUSDAmt = initCapital * hedgeRatio
+    let inv_usdamt = hedgeUSDAmt * miningRatio
+    let shortbuff = hedgeUSDAmt - inv_usdamt
+    // 反挖的 LP ratio，會比原本的要少
+    let invr = getTokenAmountsFromDepositAmounts(cprice_matic, lower, upper, cprice_matic, 1, inv_usdamt)
+    let deltaX_inv = invr.deltaX
+    let deltaY_inv = invr.deltaY
+    let rawLq_inv = calcLiquidity(cprice_matic,upper,lower,deltaX_inv,deltaY_inv)
+
+
+
+    let longAmt = initCapital - hedgeUSDAmt
+    // 正挖的 LP ratio
+    let inkd = getTokenAmountsFromDepositAmounts(cprice_matic, lower, upper, cprice_matic, 1, longAmt)
+    let deltaX = inkd.deltaX
+    let deltaY = inkd.deltaY
+    let rawLq = calcLiquidity(cprice_matic,upper,lower,deltaX,deltaY)
+
+
+    
+    // AAVE 清算線
+    let liquidation_price = cprice_matic * (2.0-miningRatio)
+
+    // 預設1%越寬越少推估的
+    const fee_rate_estimated_1 = 0.001915 * cnt / range_perc * inv_usdamt
+    const fee_rate_estimated_2 = 0.001915 * cnt / range_perc * longAmt
+
+    
+
+    let tick = 0.01
+    let start_price = lower*0.5
+    let end_price = liquidation_price * 1.1
+    let num_steps = parseInt((end_price-start_price)/tick)
+    
+    let start_lose_money_point = -1
+    let liquidation_point = -1
+    let entry_price = -1
+    // 逼近真實上下界計算公式
+    let real_upper = (deltaY + rawLq*Math.sqrt(cprice_matic))/rawLq
+    real_upper *= real_upper
+    let real_lower = rawLq / (deltaX+rawLq/Math.sqrt(cprice_matic))
+    real_lower *= real_lower
+    for(let k = 1;k<num_steps;k++){
+        let P = start_price + tick * k
+
+        //反挖 -- 當前經過 IL 計算之後部位剩餘顆數
+        let P_clamp = Math.min( Math.max(P,real_lower),real_upper)
+        let rawlpc_inv = getILPriceChange(cprice_matic,P_clamp,upper,lower,deltaX_inv,deltaY_inv)
+        let amt1_inv = rawlpc_inv.Lx2
+        let amt2_inv = rawlpc_inv.Ly2
+        curamt = amt1_inv+amt2_inv/P
+        let hedged_res = shortbuff + curamt*P
+        hedged_res += fee_rate_estimated_1
+
+
+        //正挖 -- 當前經過 IL 計算之後部位剩餘顆數
+        let rawlpc = getILPriceChange(cprice_matic,P_clamp,upper,lower,deltaX,deltaY)
+        let amt1 = rawlpc.Lx2
+        let amt2 = rawlpc.Ly2
+        curusd = amt1 * P + amt2
+        curusd += fee_rate_estimated_2
+
+        scatter_points.push([P.toFixed(3),curusd+hedged_res])
+        
+        if(start_lose_money_point<0){
+            if(hedged_res<=initCapital){
+                start_lose_money_point = k-1
+            }
+        }
+        if(liquidation_point<0){
+            if(P>=liquidation_price){
+                // liquidate
+                console.log(`liquidate @${P}`);
+                hedged_res = curamt * P
+                hedged_res += fee_rate_estimated_1
+                liquidation_point = k-1
+            }
+        }
+        if(entry_price<0){
+            if(P>=cprice_matic){
+                entry_price = k-1
+            }
+        }
+    }
+
+    
+    below_zero.push(
+        {
+            gt: liquidation_point,
+            lt: num_steps,
+            color: 'rgba(255, 0, 0, 0.4)'
+        },
+        {
+            gt: start_lose_money_point,
+            lt: liquidation_point,
+            color: 'rgba(0, 0, 180, 0.4)'
+        },
+    
+    )
+    below_zero_line.push(
+        {
+            name: 'liquidate',
+            xAxis:liquidation_point,
+            label: { 
+                formatter: 'liquidate',
+            },
+        },
+        {
+            name: 'entryPrice',
+            xAxis:entry_price,
+            label: { 
+                formatter: 'entryPrice',
+            },
+        }
+    )
+    
+}
+const toggleChartData = (cnt,hedgetype="noHedge") => {
+    simulate(cnt,hedgetype)
     console.log(cnt);
     let opt1 = chart_opt_with_param(cnt,scatter_points)
     chart_d.setOption(opt1)

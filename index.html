@@ -39,14 +39,17 @@
         </div>
         <div class="length range__slider" data-min="1" data-max="100">
             <div class="length__title field-title" data-length='0'>Upper Percentage&nbsp&nbsp</div>
-            <input id="slider" class="slider" type="range" min="0" max="100" value="1" />
-        </div>
-        <div class="length range__slider" data-min="1" data-max="100">
-            <div class="length__title field-title" data-length='0'>Lower Percentage&nbsp&nbsp</div>
-            <input id="slider" class="slider" type="range" min="0" max="100" value="1" />
+            <input id="slider" class="slider" type="range" min="1" max="100" value="1" />
         </div>
         <div class="btn_container">
             <button class="btn generate" id="Simulate">Simulate</button>
+        </div>
+        <div class="length selectoption" >
+            <select id="visualtype" >
+                <option value="noHedge">No Hedge</option>
+                <option value="borrowed">Borrowed</option>
+                <option value="neutral">Neutral</option>
+            </select>
         </div>
         <div class="btn_container">
             <button class="btnplus" id="Plus">+</button>

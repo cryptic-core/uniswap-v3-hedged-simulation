@@ -1,8 +1,9 @@
 NodeList.prototype[Symbol.iterator] = Array.prototype[Symbol.iterator];
 HTMLCollection.prototype[Symbol.iterator] = Array.prototype[Symbol.iterator];
 var dayCnt = 0
+var hedgedsel = "noHedge"
 const init = () => {
-	toggleChartData(dayCnt)
+	toggleChartData(dayCnt,hedgedsel)
 	const sliderProps = {
 		fill: "#0B1EDF",
 		background: "rgba(255, 255, 255, 0.214)",
@@ -30,20 +31,24 @@ const init = () => {
 		applyFill(sld.querySelector("input"),sliderValue)
 	}
 
+	document.getElementById("visualtype").onchange = (e)=>{
+		hedgedsel = document.getElementById("visualtype").value
+		toggleChartData(dayCnt,hedgedsel)
+	}
 
 	let cb = document.getElementsByClassName("btn_container")
 	// simulate click
 	cb[0].getElementsByTagName("button").Simulate.addEventListener("click", () => {
-		toggleChartData(dayCnt)
+		toggleChartData(dayCnt,hedgedsel)
 	})
 	
 	cb[1].getElementsByTagName("button")[0].addEventListener("click", () => {
 		dayCnt++
-	 	toggleChartData(dayCnt)
+		toggleChartData(dayCnt,hedgedsel)
 	})
 	cb[1].getElementsByTagName("button")[1].addEventListener("click", () => {
 		Math.max(dayCnt--,0)
-		toggleChartData(dayCnt)
+		toggleChartData(dayCnt,hedgedsel)
 	})
 }
 window.addEventListener('load', ()=> {
