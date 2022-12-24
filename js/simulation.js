@@ -245,8 +245,8 @@ const simulate_normal = (cnt)=> {
     console.log(`start_lose_money_point ${start_lose_money_point}`);
     below_zero.push(
         {
-            gt: start_lose_money_point,
-            lt: num_steps,
+            gt: 0,
+            lt: start_lose_money_point,
             color: 'rgba(0, 0, 180, 0.4)'
         },
     
@@ -262,7 +262,6 @@ const simulate_normal = (cnt)=> {
     )
     
 }
-
 
 const simulate_aave_borrowed = (cnt)=>{
     if(!chart_d){
@@ -334,8 +333,8 @@ const simulate_aave_borrowed = (cnt)=>{
     let longAmt = shortAmt - miningAmt 
     let mining_usd_amt = miningAmt * cprice_matic
     // AAVE 清算線
-    let liquidation_price = cprice_matic * (2.0-hedgeRatio)
-
+    let liquidation_price = hedgeUSDAmt/miningAmt
+    
     // 預設1%越寬越少推估的
     const fee_rate_estimated_1 = 0.001915 * cnt / range_perc * miningAmt
 
@@ -509,7 +508,7 @@ const simulate_aave_neutral = (cnt)=>{
     console.log(`deltaX ${deltaX} deltaY ${deltaY}`)
     
     // AAVE 清算線
-    let liquidation_price = cprice_matic * (2.0-miningRatio)
+    let liquidation_price = hedgeUSDAmt/shortAmt
 
     // 預設1%越寬越少推估的
     const fee_rate_estimated_1 = 0.001915 * cnt / range_perc * inv_usdamt
