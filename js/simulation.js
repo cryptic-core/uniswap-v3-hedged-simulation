@@ -141,7 +141,18 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
     let fee_rate = 0.3
     let initTVL = 7.5 * 1000000
     let range_perc = 0 // 預設1%越寬越少推估的
-    
+
+    const input_txt = document.getElementsByClassName("inputbox")
+    for (let i = 0; i < input_txt.length; i++){
+        let inp = input_txt[i]
+        let title = inp.getElementsByClassName('field-title')[0].innerText
+        if(title.includes('Initial')){
+            initCapital = inp.getElementsByClassName('result__viewbox')[0].value
+        }else if(title.includes('Current')){
+            cprice_matic = inp.getElementsByClassName('result__viewbox')[0].value
+        }
+    }
+
 
     const sliders = document.getElementsByClassName("range__slider")
 	for (let i = 0; i < sliders.length; i++){
@@ -159,24 +170,14 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
         }
     }
     
-    const input_txt = document.getElementsByClassName("inputbox")
-    for (let i = 0; i < input_txt.length; i++){
-        let inp = input_txt[i]
-        let title = inp.getElementsByClassName('field-title')[0].innerText
-        if(title.includes('Initial')){
-            initCapital = inp.getElementsByClassName('result__viewbox')[0].value
-        }else if(title.includes('Current')){
-            cprice_matic = inp.getElementsByClassName('result__viewbox')[0].value
-        }
-    }
-
+    
     // check input parameters
-    // console.log(`upper ${upper}`);
-    // console.log(`lower ${lower}`);
-    // console.log(`hedgeRatio ${hedgeRatio}`);
-    // console.log(`miningRatio ${miningRatio}`);
-    // console.log(`initCapital ${initCapital}`);
-    // console.log(`initialPrice ${initialPrice}`);
+    console.log(`upper ${upper}`);
+    console.log(`lower ${lower}`);
+    console.log(`hedgeRatio ${hedgeRatio}`);
+    console.log(`miningRatio ${miningRatio}`);
+    console.log(`initCapital ${initCapital}`);
+    console.log(`current price ${cprice_matic}`);
     
     scatter_points = []
     below_zero = [] // start below zero price till chart end
@@ -192,7 +193,8 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
     let inkd = getTokenAmountsFromDepositAmounts(cprice_matic, lower, upper, cprice_matic, 1, mining_usd_amt)
     let deltaX = inkd.deltaX
     let deltaY = inkd.deltaY
-
+console.log(deltaX);
+console.log(deltaY);
     let tick = 1
     let start_price = lower*0.5
     let end_price = upper * 1.5
@@ -212,7 +214,7 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
     let bzPair = [] // open/close pair
     let hte_below_cap = []
     // end of hte
-
+    
     for(let k = 1;k<num_steps;k++){
         let P = start_price + tick * k
         //當前經過 IL 計算之後部位剩餘顆數
