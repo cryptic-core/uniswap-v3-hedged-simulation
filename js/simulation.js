@@ -62,7 +62,7 @@ const getILPriceChange = (
     return {newAssetValue,Lx2,Ly2}
 }
 
-const chart_opt_with_param = (day,data) => {
+const chart_opt_with_param = (day,data,hedgetype) => {
         
     return {
         "animation": true,
@@ -77,10 +77,12 @@ const chart_opt_with_param = (day,data) => {
             text: `Day ${day}`
         },
         xAxis: {
+            name:"ETH price",
             type: 'category',
             boundaryGap: false
         },
         yAxis: {
+            name: hedgetype==="hteHedge"?"Asset Value":"PnL",
             type: 'value',
             boundaryGap: [0, '30%']
         },
@@ -203,7 +205,8 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
     let start_lose_money_point = -1
     let liquidation_point = -1
     let entry_price = -1
-
+    let lower_idx = 0
+    let upper_idx = 0
     // hte 專用，n個水平線以下
     let prvdif = 0
     let bzPair = [] // open/close pair
@@ -230,6 +233,8 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
                         start_lose_money_point = k-1
                     }
                 }
+                let PnL = (_res-initCapital)
+                scatter_points.push([P.toFixed(0),PnL])
             }break;
             case "futureHedge":{
                 
@@ -252,6 +257,9 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
                         entry_price = k-1
                     }
                 }
+
+                let PnL = (_res-initCapital)
+                scatter_points.push([P.toFixed(0),PnL])
             }break;
             case "hteHedge":{
                 hte_price = constant_hte_p / P
@@ -290,9 +298,20 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
                         entry_price = k-1
                     }
                 }
+                scatter_points.push([P.toFixed(0),_res])
             }break;
         }
-        scatter_points.push([P.toFixed(0),_res])
+        if(lower_idx<1){
+            if(P>=lower){
+                lower_idx = k-1
+            }
+        }
+        if(upper_idx<1){
+            if(P>=upper){
+                upper_idx = k-1
+            }
+        }
+        
     }
     
     
@@ -337,6 +356,20 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
                     label: { 
                         formatter: 'entryPrice',
                     },
+                },
+                {
+                    name: 'lower',
+                    xAxis:lower_idx,
+                    label: { 
+                        formatter: 'lower',
+                    },
+                },
+                {
+                    name: 'upper',
+                    xAxis:upper_idx,
+                    label: { 
+                        formatter: 'upper',
+                    },
                 }
             )
         }break;
@@ -350,6 +383,29 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
                     },
                 )
             }
+            below_zero_line.push(
+                {
+                    name: 'entryPrice',
+                    xAxis:entry_price,
+                    label: { 
+                        formatter: 'entryPrice',
+                    },
+                },
+                {
+                    name: 'lower',
+                    xAxis:lower_idx,
+                    label: { 
+                        formatter: 'lower',
+                    },
+                },
+                {
+                    name: 'upper',
+                    xAxis:upper_idx,
+                    label: { 
+                        formatter: 'upper',
+                    },
+                }
+            )
         }break;
     }
     
@@ -358,6 +414,6 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
 
 const toggleChartData = (cnt,hedgetype="noHedge") => {
     simulate(cnt,hedgetype)
-    let opt1 = chart_opt_with_param(cnt,scatter_points)
+    let opt1 = chart_opt_with_param(cnt,scatter_points,hedgetype)
     chart_d.setOption(opt1)
 }
