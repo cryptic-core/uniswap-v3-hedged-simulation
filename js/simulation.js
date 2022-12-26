@@ -172,12 +172,12 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
     
     
     // check input parameters
-    console.log(`upper ${upper}`);
-    console.log(`lower ${lower}`);
-    console.log(`hedgeRatio ${hedgeRatio}`);
-    console.log(`miningRatio ${miningRatio}`);
-    console.log(`initCapital ${initCapital}`);
-    console.log(`current price ${cprice_matic}`);
+    // console.log(`upper ${upper}`);
+    // console.log(`lower ${lower}`);
+    // console.log(`hedgeRatio ${hedgeRatio}`);
+    // console.log(`miningRatio ${miningRatio}`);
+    // console.log(`initCapital ${initCapital}`);
+    // console.log(`current price ${cprice_matic}`);
     
     scatter_points = []
     below_zero = [] // start below zero price till chart end
@@ -193,8 +193,7 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
     let inkd = getTokenAmountsFromDepositAmounts(cprice_matic, lower, upper, cprice_matic, 1, mining_usd_amt)
     let deltaX = inkd.deltaX
     let deltaY = inkd.deltaY
-console.log(deltaX);
-console.log(deltaY);
+
     let tick = 1
     let start_price = lower*0.5
     let end_price = upper * 1.5
