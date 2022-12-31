@@ -242,12 +242,10 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
                 let margin = hedge_usd_amt + (cprice_matic - P) * tolower.Lx2
                 let bLiqudate = (margin / hedge_usd_amt)<0.33
                 if(bLiqudate){
-                    if(liquidation_point<0){
-                        liquidation_point = k-1
-                    }
                     margin = 0
                 }
                 _res += margin
+
                 if(start_lose_money_point<0){
                     if(_res<initCapital){
                         start_lose_money_point = k-1
@@ -258,9 +256,11 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
                         entry_price = k-1
                     }
                 }
-
+                
                 let PnL = (_res-initCapital)
-                scatter_points.push([P.toFixed(0),PnL])
+                if(!bLiqudate){
+                    scatter_points.push([P.toFixed(0),PnL])
+                }
             }break;
             case "hteHedge":{
                 hte_price = constant_hte_p / P
@@ -331,15 +331,16 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
                 liquidation_point = num_steps
             }
             below_zero.push(
-                {
-                    gt: liquidation_point,
-                    lt: num_steps,
-                    color: 'rgba(255, 0, 0, 0.4)'
-                },
+                
                 {
                     gt: start_lose_money_point,
-                    lt: liquidation_point,
+                    lt: upper_idx,
                     color: 'rgba(0, 0, 180, 0.4)'
+                },
+                {
+                    gt: upper_idx,
+                    lt: num_steps,
+                    color: 'rgba(10, 0, 180, 0.08)'
                 },
             )
 
