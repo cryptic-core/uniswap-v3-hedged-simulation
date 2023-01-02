@@ -3,6 +3,7 @@ var scatter_points = []
 var below_zero = []
 var below_zero_line = []
 var breakevenpoint = 0
+var start_lose_money_point = -1
 var fee_rate_estimated_1 = 0
 const getTokenAmountsFromDepositAmounts = (P,Pl,Pu,priceUSDX,priceUSDY,targetAmounts)=>{
     
@@ -116,16 +117,38 @@ const chart_opt_with_param = (day,data,breakevenpoint) => {
                 type: 'line',
                 smooth: 0.6,
                 symbol: 'none',
+                
+                markLine: {
+                    symbol: ['none', 'none'],
+                    label: { formatter: 'Liquidate' },
+                    data: below_zero_line,
+                    lineStyle: {
+                        color: '#E1679C',
+                        width: 3
+                    },
+                },
                 lineStyle: {
                     color: '#5470C6',
                     width: 5
                 },
-                markLine: {
-                    symbol: ['none', 'none'],
-                    label: { formatter: 'Liquidate' },
-                    data: below_zero_line
+                markPoint: {
+                    symbol: "path://m 0,0 h 48 v 20 h -30 l -6,10 l -6,-10 h -6 z",
+                    symbolSize: 50,
+                    symbolOffset: ["34%", "-50%"],
+                    symbolKeepAspect: true,
+                    label: {
+                        position: "insideTop",
+                        distance: 7,
+                    },
+                    data: [
+                        { 
+                            name: 'breakeven',
+                            value: breakevenpoint,
+                            xAxis: start_lose_money_point,
+                            yAxis: 0 
+                        }
+                    ]
                 },
-                
                 areaStyle: {},
                 "data": data,
                 "label": {
@@ -263,7 +286,7 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
     let amt_hte =  hedge_usd_amt/hte_price
 
     breakevenpoint = 0
-    let start_lose_money_point = -1
+    start_lose_money_point = -1
     let liquidation_point = -1
     let entry_price = -1
     let lower_idx = 0
@@ -293,6 +316,11 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
                     if(_res>initCapital){
                         start_lose_money_point = k-1
                         breakevenpoint = P
+                    }
+                }
+                if(entry_price<0){
+                    if(P>=cprice_matic){
+                        entry_price = k-1
                     }
                 }
                 let PnL = (_res-initCapital)/initCapital*100
@@ -352,6 +380,7 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
                          
                         if(breakevenpoint<0.01){
                             breakevenpoint = P
+                            start_lose_money_point = k-1
                         }
                     }else if((prvdif>0)&&(curcapdif<=0)){ // open
                         if(bzPair.length===0){
@@ -392,6 +421,32 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
                     lt: start_lose_money_point,
                     color: 'rgba(0, 0, 180, 0.4)'
                 },
+            )
+            below_zero_line.push(
+                {
+                    name: 'entryPrice',
+                    xAxis:entry_price,
+                    label: { 
+                        formatter: 'entryPrice',
+                        fontSize: '18'
+                    },
+                },
+                {
+                    name: 'lower',
+                    xAxis:lower_idx,
+                    label: { 
+                        formatter: 'lower',
+                        fontSize: '18'
+                    },
+                },
+                {
+                    name: 'upper',
+                    xAxis:upper_idx,
+                    label: { 
+                        formatter: 'upper',
+                        fontSize: '18'
+                    },
+                }
             )
         }break;
         case "futureHedge":{
