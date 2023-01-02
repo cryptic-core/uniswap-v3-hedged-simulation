@@ -74,17 +74,32 @@ const chart_opt_with_param = (day,data,hedgetype) => {
         "animationEasingUpdate": "cubicOut",
         "animationDelayUpdate": 0,
         title: {
-            text: `Day ${day}`
+            text: `Day ${day}`,
+            textStyle:{
+                fontSize:20
+            }
         },
         xAxis: {
             name:"ETH price",
             type: 'category',
-            boundaryGap: false
+            boundaryGap: false,
+            axisLabel: {
+                fontSize: '14'
+            },
+            nameTextStyle:{ 
+                fontSize: '21'
+            }
         },
         yAxis: {
-            name: hedgetype==="hteHedge"?"Asset Value":"PnL",
+            name: "PnL",
             type: 'value',
-            boundaryGap: [0, '30%']
+            boundaryGap: [0, '30%'],
+            axisLabel: {
+                fontSize: '14'
+            },
+            nameTextStyle:{ 
+                fontSize: '21'
+            }
         },
         visualMap: {
             type: 'piecewise',
@@ -113,11 +128,51 @@ const chart_opt_with_param = (day,data,hedgetype) => {
                 "label": {
                     "show": false,
                     "position": "top",
-                    "margin": 8
+                    "margin": 8,
                 }
             }
         ],
-    
+        graphic:[
+            {
+                type: 'group',
+                left: '14%',
+                top: '10%',
+                children: [
+                  {
+                    type: 'rect',
+                    z: 100,
+                    left: 'center',
+                    top: 'middle',
+                    shape: {
+                      width: 240,
+                      height: 90
+                    },
+                    style: {
+                      fill: '#D4D1D6',
+                      stroke: '#555',
+                      lineWidth: 1,
+                      shadowBlur: 8,
+                      shadowOffsetX: 3,
+                      shadowOffsetY: 3,
+                      shadowColor: 'rgba(0,0,0,0.2)'
+                    }
+                  },
+                  {
+                    type: 'text',
+                    z: 100,
+                    left: 'center',
+                    top: 'middle',
+                    style: {
+                      fill: '#333',
+                      width: 220,
+                      overflow: 'break',
+                      text: 'fee income:20\nbreak even:1083',
+                      font: '20px Microsoft YaHei'
+                    }
+                  }
+                ]
+            }
+        ],
         tooltip: {
             trigger: 'axis'
         },
@@ -350,6 +405,7 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
                     xAxis:liquidation_point,
                     label: { 
                         formatter: 'liquidate',
+                        fontSize: '18'
                     },
                 },
                 {
@@ -357,6 +413,7 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
                     xAxis:entry_price,
                     label: { 
                         formatter: 'entryPrice',
+                        fontSize: '18'
                     },
                 },
                 {
@@ -364,6 +421,7 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
                     xAxis:lower_idx,
                     label: { 
                         formatter: 'lower',
+                        fontSize: '18'
                     },
                 },
                 {
@@ -371,6 +429,7 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
                     xAxis:upper_idx,
                     label: { 
                         formatter: 'upper',
+                        fontSize: '18'
                     },
                 }
             )
@@ -391,6 +450,7 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
                     xAxis:entry_price,
                     label: { 
                         formatter: 'entryPrice',
+                        fontSize: '18'
                     },
                 },
                 {
@@ -398,6 +458,7 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
                     xAxis:lower_idx,
                     label: { 
                         formatter: 'lower',
+                        fontSize: '18'
                     },
                 },
                 {
@@ -405,6 +466,7 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
                     xAxis:upper_idx,
                     label: { 
                         formatter: 'upper',
+                        fontSize: '18'
                     },
                 }
             )
