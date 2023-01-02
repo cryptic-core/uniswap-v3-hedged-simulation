@@ -2,7 +2,8 @@ var chart_d = null
 var scatter_points = []
 var below_zero = []
 var below_zero_line = []
-
+var breakevenpoint = 0
+var fee_rate_estimated_1 = 0
 const getTokenAmountsFromDepositAmounts = (P,Pl,Pu,priceUSDX,priceUSDY,targetAmounts)=>{
     
     deltaL = targetAmounts / ((Math.sqrt(P) - Math.sqrt(Pl)) * priceUSDY + 
@@ -62,7 +63,7 @@ const getILPriceChange = (
     return {newAssetValue,Lx2,Ly2}
 }
 
-const chart_opt_with_param = (day,data,hedgetype) => {
+const chart_opt_with_param = (day,data,breakevenpoint) => {
         
     return {
         "animation": true,
@@ -91,8 +92,10 @@ const chart_opt_with_param = (day,data,hedgetype) => {
             }
         },
         yAxis: {
-            name: "PnL",
+            name: "PnL(%)",
             type: 'value',
+            min:-30,
+            max:12,
             boundaryGap: [0, '30%'],
             axisLabel: {
                 fontSize: '14'
@@ -162,11 +165,12 @@ const chart_opt_with_param = (day,data,hedgetype) => {
                     z: 100,
                     left: 'center',
                     top: 'middle',
+                    
                     style: {
                       fill: '#333',
                       width: 220,
                       overflow: 'break',
-                      text: 'fee income:20\nbreak even:1083',
+                      text: `fee income:${(fee_rate_estimated_1.toFixed(2))} USD\n\nbreak even price:${breakevenpoint}`,
                       font: '20px Microsoft YaHei'
                     }
                   }
@@ -243,7 +247,7 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
     let hedge_usd_amt = initCapital - mining_usd_amt
     
     // 預設1%越寬越少推估的
-    const fee_rate_estimated_1 = 0.001915 * cnt / range_perc * mining_usd_amt
+    fee_rate_estimated_1 = 0.001915 * cnt / range_perc * mining_usd_amt
 
     let inkd = getTokenAmountsFromDepositAmounts(cprice_matic, lower, upper, cprice_matic, 1, mining_usd_amt)
     let deltaX = inkd.deltaX
@@ -258,6 +262,7 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
     let hte_price = constant_hte_p / cprice_matic
     let amt_hte =  hedge_usd_amt/hte_price
 
+    breakevenpoint = 0
     let start_lose_money_point = -1
     let liquidation_point = -1
     let entry_price = -1
@@ -287,9 +292,10 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
                 if(start_lose_money_point<0){
                     if(_res>initCapital){
                         start_lose_money_point = k-1
+                        breakevenpoint = P
                     }
                 }
-                let PnL = (_res-initCapital)
+                let PnL = (_res-initCapital)/initCapital*100
                 scatter_points.push([P.toFixed(0),PnL])
             }break;
             case "futureHedge":{
@@ -304,6 +310,7 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
                 if(start_lose_money_point<0){
                     if(_res<initCapital){
                         start_lose_money_point = k-1
+                        breakevenpoint = P
                     }
                 }
                 if(entry_price<0){
@@ -312,7 +319,7 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
                     }
                 }
                 
-                let PnL = (_res-initCapital)
+                let PnL = (_res-initCapital)/initCapital*100
                 if(!bLiqudate){
                     scatter_points.push([P.toFixed(0),PnL])
                 }
@@ -342,10 +349,14 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
                             hte_below_cap.push(bzPair)
                             bzPair = []
                         }
+                         
+                        if(breakevenpoint<0.01){
+                            breakevenpoint = P
+                        }
                     }else if((prvdif>0)&&(curcapdif<=0)){ // open
                         if(bzPair.length===0){
                             bzPair.push(k)
-                        }
+                        } 
                     }
                 }
                 prvdif = curcapdif
@@ -354,7 +365,9 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
                         entry_price = k-1
                     }
                 }
-                scatter_points.push([P.toFixed(0),_res])
+
+                let PnL = (_res-initCapital)/initCapital * 100
+                scatter_points.push([P.toFixed(0),PnL])
             }break;
         }
         if(lower_idx<1){
@@ -478,6 +491,6 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
 
 const toggleChartData = (cnt,hedgetype="noHedge") => {
     simulate(cnt,hedgetype)
-    let opt1 = chart_opt_with_param(cnt,scatter_points,hedgetype)
+    let opt1 = chart_opt_with_param(cnt,scatter_points,breakevenpoint)
     chart_d.setOption(opt1)
 }
