@@ -1,11 +1,10 @@
 var chart_d = null
-var scatter_points_raw = []
-var scatter_points_raw_fee = []
-var scatter_points_hdeged = []
 var scatter_points = []
-
-var profitlow = 0
-var profithigh = -99999999999
+var below_zero = []
+var below_zero_line = []
+var breakevenpoint = 0
+var start_lose_money_point = -1
+var fee_rate_estimated_1 = 0
 const getTokenAmountsFromDepositAmounts = (P,Pl,Pu,priceUSDX,priceUSDY,targetAmounts)=>{
     
     deltaL = targetAmounts / ((Math.sqrt(P) - Math.sqrt(Pl)) * priceUSDY + 
@@ -65,345 +64,483 @@ const getILPriceChange = (
     return {newAssetValue,Lx2,Ly2}
 }
 
-const chart_opt_with_param = (xTitle,yTitle,zTitle,data,profitlow,profithigh) => {
+const chart_opt_with_param = (day,data,breakevenpoint) => {
         
     return {
-    "animation": true,
-    "animationThreshold": 2000,
-    "animationDuration": 1000,
-    "animationEasing": "cubicOut",
-    "animationDelay": 0,
-    "animationDurationUpdate": 300,
-    "animationEasingUpdate": "cubicOut",
-    "animationDelayUpdate": 0,
-    "color": [
-        "#c23531",
-        "#2f4554",
-        "#61a0a8",
-        "#d48265",
-        "#749f83",
-        "#ca8622",
-        "#bda29a",
-        "#6e7074",
-        "#546570",
-        "#c4ccd3",
-        "#f05b72",
-        "#ef5b9c",
-        "#f47920",
-        "#905a3d",
-        "#fab27b",
-        "#2a5caa",
-        "#444693",
-        "#726930",
-        "#b2d235",
-        "#6d8346",
-        "#ac6767",
-        "#1d953f",
-        "#6950a1",
-        "#918597"
-    ],
-    "series": [
-        {
-            "type": "scatter3D",
-            "data": data,
-            "label": {
-                "show": false,
-                "position": "top",
-                "margin": 8
+        "animation": true,
+        "animationThreshold": 2000,
+        "animationDuration": 1000,
+        "animationEasing": "cubicOut",
+        "animationDelay": 0,
+        "animationDurationUpdate": 300,
+        "animationEasingUpdate": "cubicOut",
+        "animationDelayUpdate": 0,
+        title: {
+            text: `Day ${day}`,
+            textStyle:{
+                fontSize:20
             }
-        }
-    ],
-    "legend": [
-        {
-            "data": [
-                ""
-            ],
-            "selected": {},
-            "show": true,
-            "padding": 5,
-            "itemGap": 10,
-            "itemWidth": 25,
-            "itemHeight": 14
-        }
-    ],
-    "tooltip": {
-        "show": true,
-        "trigger": "item",
-        "triggerOn": "mousemove|click",
-        "axisPointer": {
-            "type": "line"
         },
-        "showContent": true,
-        "alwaysShowContent": false,
-        "showDelay": 0,
-        "hideDelay": 100,
-        "textStyle": {
-            "fontSize": 14
-        },
-        "borderWidth": 0,
-        "padding": 5
-    },
-    "visualMap": [
-        {
-            "show": true,
-            "type": "continuous",
-            "min": profitlow,
-            "max": profithigh,
-            "inRange": {
-                "color": [
-                    "#1710c0",
-                    "#0b9df0",
-                    "#00fea8",
-                    "#00ff0d",
-                    "#f5f811",
-                    "#f09a09",
-                    "#fe0300"
-                ]
+        xAxis: {
+            name:"ETH price",
+            type: 'category',
+            boundaryGap: false,
+            axisLabel: {
+                fontSize: '14'
             },
-            "calculable": true,
-            "inverse": false,
-            "splitNumber": 5,
-            "dimension": 2,
-            "orient": "vertical",
-            "top": "10",
-            "showLabel": true,
-            "itemWidth": 20,
-            "itemHeight": 140,
-            "borderWidth": 0
+            nameTextStyle:{ 
+                fontSize: '21'
+            }
         },
-        {
-            "show": true,
-            "type": "continuous",
-            "min": 0,
-            "max": 1.2,
-            "inRange": {
-                "symbolSize": [
-                    10,
-                    10
-                ]
+        yAxis: {
+            name: "PnL(%)",
+            type: 'value',
+            min:-30,
+            max:12,
+            boundaryGap: [0, '30%'],
+            axisLabel: {
+                fontSize: '14'
             },
-            "calculable": true,
-            "inverse": false,
-            "splitNumber": 5,
-            "dimension": 4,
-            "orient": "vertical",
-            "bottom": "10",
-            "showLabel": true,
-            "itemWidth": 20,
-            "itemHeight": 140,
-            "borderWidth": 0
-        }
-    ],
-    "xAxis3D": {
-        "name": xTitle,
-        "nameGap": 20,
-        "type": "value",
-        "axisLabel": {
-            "margin": 8
-        }
-    },
-    "yAxis3D": {
-        "name": yTitle,
-        "nameGap": 20,
-        "type": "value",
-        "axisLabel": {
-            "margin": 8
-        }
-    },
-    "zAxis3D": {
-        "name": zTitle,
-        "nameGap": 20,
-        "type": "value",
-        "axisLabel": {
-            "margin": 8
-        }
-    },
-    "grid3D": {
-        "boxWidth": 100,
-        "boxHeight": 100,
-        "boxDepth": 100,
-        "viewControl": {
-            "autoRotate": false,
-            "autoRotateSpeed": 10,
-            "rotateSensitivity": 1
-        }
-    },
-    "title": [
-        {
-            "padding": 5,
-            "itemGap": 10
-        }
-    ]
-    }
+            nameTextStyle:{ 
+                fontSize: '21'
+            }
+        },
+        visualMap: {
+            type: 'piecewise',
+            show: false,
+            dimension: 0,
+            seriesIndex: 0,
+            pieces:below_zero
+        },
+        "series": [
+            {
+                type: 'line',
+                smooth: 0.6,
+                symbol: 'none',
+                
+                markLine: {
+                    symbol: ['none', 'none'],
+                    label: { formatter: 'Liquidate' },
+                    data: below_zero_line,
+                    lineStyle: {
+                        color: '#E1679C',
+                        width: 3
+                    },
+                },
+                lineStyle: {
+                    color: '#5470C6',
+                    width: 5
+                },
+                markPoint: {
+                    symbol: "path://m 0,0 h 48 v 20 h -30 l -6,10 l -6,-10 h -6 z",
+                    symbolSize: 50,
+                    symbolOffset: ["34%", "-50%"],
+                    symbolKeepAspect: true,
+                    label: {
+                        position: "insideTop",
+                        distance: 7,
+                    },
+                    data: [
+                        { 
+                            name: 'breakeven',
+                            value: breakevenpoint,
+                            xAxis: start_lose_money_point,
+                            yAxis: 0 
+                        }
+                    ]
+                },
+                areaStyle: {},
+                "data": data,
+                "label": {
+                    "show": false,
+                    "position": "top",
+                    "margin": 8,
+                }
+            }
+        ],
+        graphic:[
+            {
+                type: 'group',
+                left: '14%',
+                top: '10%',
+                children: [
+                  {
+                    type: 'rect',
+                    z: 100,
+                    left: 'center',
+                    top: 'middle',
+                    shape: {
+                      width: 240,
+                      height: 90
+                    },
+                    style: {
+                      fill: '#D4D1D6',
+                      stroke: '#555',
+                      lineWidth: 1,
+                      shadowBlur: 8,
+                      shadowOffsetX: 3,
+                      shadowOffsetY: 3,
+                      shadowColor: 'rgba(0,0,0,0.2)'
+                    }
+                  },
+                  {
+                    type: 'text',
+                    z: 100,
+                    left: 'center',
+                    top: 'middle',
+                    
+                    style: {
+                      fill: '#333',
+                      width: 220,
+                      overflow: 'break',
+                      text: `fee income:${(fee_rate_estimated_1.toFixed(2))} USD\n\nbreak even price:${breakevenpoint}`,
+                      font: '20px Microsoft YaHei'
+                    }
+                  }
+                ]
+            }
+        ],
+        tooltip: {
+            trigger: 'axis'
+        },
+    }       
 }
 
-const simulate = () => {
+const simulate = (cnt=0,hedgetype="noHedge") => {
     if(!chart_d){
         chart_d = echarts.init(document.getElementById('assetchart'), 'white', {renderer: 'canvas'})
     }
     // do simulate
-    let initialCapital = 5000
-    let initialPrice = 1208
+    let initCapital = 10000
+    let cprice_matic = 1200
     let USD_Price = 1
-    let upper = 1500
-    let lower = 900
+    let hedgeRatio = 0.05 // 做空比率，0.7代表留了30%的上漲空間
+    let miningRatio = 0.6 // 拿來做 uniswap LP 比率，增加部位中性程度
+
+
+    let upper = 1.1
+    let lower = 0.81
     let fee_rate = 0.3
-    let initTVL = 159.27 * 1000000
-    let TVLGrowRate = 0.05
-    let tradevol_upper = 6000.59 * 1000000
-    let tradevol_lower = 551.57 * 1000000
-    let hedge_rto = 0.05
-    let fundrate_upper = 0.03*0.01*3
-    let fundrate_lower = 0.01*0.01*3
-    
-    const sliders_txt = document.getElementsByClassName("length__title")
-    for (let i = 0; i < sliders_txt.length; i++){
-        let sld = sliders_txt[i]
-        if(sld.innerText.includes('Upper Price') ){
-            upper = parseFloat(sld.parentElement.getElementsByClassName('slider')[0].value)
-        }else if(sld.innerText.includes('Lower Price') ){
-            lower = parseFloat(sld.parentElement.getElementsByClassName('slider')[0].value)
-        }else if(sld.innerText.includes('Hedge Ratio')){
-            let short_ratio = parseFloat(sld.parentElement.getElementsByClassName('slider')[0].value)
-            hedge_rto = short_ratio*0.01
-        }
-    }
-    
+    let initTVL = 7.5 * 1000000
+    let range_perc = 0 // 預設1%越寬越少推估的
+
     const input_txt = document.getElementsByClassName("inputbox")
     for (let i = 0; i < input_txt.length; i++){
         let inp = input_txt[i]
         let title = inp.getElementsByClassName('field-title')[0].innerText
-        if(title==='Initial Capital'){
-            initialCapital = parseFloat(inp.getElementsByClassName('result__viewbox')[0].getAttribute('value'))
-        }else if(title==='Initial Capital'){
-            initialPrice = parseFloat(inp.getElementsByClassName('result__viewbox')[0].getAttribute('value'))
+        if(title.includes('Initial')){
+            initCapital = inp.getElementsByClassName('result__viewbox')[0].value
+        }else if(title.includes('Current')){
+            cprice_matic = inp.getElementsByClassName('result__viewbox')[0].value
+        }
+    }
+
+
+    const sliders = document.getElementsByClassName("range__slider")
+	for (let i = 0; i < sliders.length; i++){
+		let sld = sliders[i]
+        const sliderValue = sld.querySelector(".length__title")
+        let sliders_txt = sld.getElementsByClassName("length__title")
+        let sldtitle = sliders_txt[0].innerText
+        if(sldtitle.includes('Upper Percentage') ){
+            upper = cprice_matic * (1 + sld.querySelector("input").value*0.01)
+            range_perc = sld.querySelector("input").value
+        }else if(sldtitle.includes('Lower Percentage') ){
+            lower = cprice_matic * (1 - sld.querySelector("input").value*0.01)
+        }else if(sldtitle.includes('Short Ratio')){
+            hedgeRatio = sld.querySelector("input").value*0.01
         }
     }
     
-    scatter_points_raw = []
-    scatter_points_raw_fee = []
+    
+    // check input parameters
+    // console.log(`upper ${upper}`);
+    // console.log(`lower ${lower}`);
+    // console.log(`hedgeRatio ${hedgeRatio}`);
+    // console.log(`miningRatio ${miningRatio}`);
+    // console.log(`initCapital ${initCapital}`);
+    // console.log(`current price ${cprice_matic}`);
+    
     scatter_points = []
-    scatter_points_hdeged = []
+    below_zero = [] // start below zero price till chart end
+    below_zero_line = []
+
+    // 實際拿下去作市的數量
+    let mining_usd_amt = initCapital*(1-hedgeRatio)
+    let hedge_usd_amt = initCapital - mining_usd_amt
     
+    // 預設1%越寬越少推估的
+    fee_rate_estimated_1 = 0.001915 * cnt / range_perc * mining_usd_amt
 
-    let rwkd = getTokenAmountsFromDepositAmounts(initialPrice,lower,upper,initialPrice,USD_Price,initialCapital)
-    let rawAmtEth = rwkd.deltaX
-    let rawAmtUsd = rwkd.deltaY
-    let rawLq = calcLiquidity(initialPrice,upper,lower,rawAmtEth,rawAmtUsd)
+    let inkd = getTokenAmountsFromDepositAmounts(cprice_matic, lower, upper, cprice_matic, 1, mining_usd_amt)
+    let deltaX = inkd.deltaX
+    let deltaY = inkd.deltaY
 
-    let poolAsset = initialCapital - (initialCapital*hedge_rto)
-    let inkd = getTokenAmountsFromDepositAmounts(initialPrice,lower,upper,initialPrice,USD_Price,poolAsset)
-    let initialAmtEth = inkd.deltaX
-    let initialAmtUsd = inkd.deltaY
-    let initialLq = calcLiquidity(initialPrice,upper,lower,initialAmtEth,initialAmtUsd)
+    let tick = 1
+    let start_price = lower*0.5
+    let end_price = upper * 1.5
+    let num_steps = parseInt((end_price-start_price)/tick)
+    let tolower = getILPriceChange(cprice_matic,lower,upper,lower,deltaX,deltaY)
+    const constant_hte_p = 1000*1000
+    let hte_price = constant_hte_p / cprice_matic
+    let amt_hte =  hedge_usd_amt/hte_price
+
+    breakevenpoint = 0
+    start_lose_money_point = -1
+    let liquidation_point = -1
+    let entry_price = -1
+    let lower_idx = 0
+    let upper_idx = 0
+    // hte 專用，n個水平線以下
+    let prvdif = 0
+    let bzPair = [] // open/close pair
+    let hte_below_cap = []
+    // end of hte
     
-    
-    
-    for(let k = 1;k<initialPrice*2;k+=50){
-        let feeIncome_raw_accu = 0
-        let feeIncome_accu = 0
-        let fundrate_income_accu = 0
-        for(let d = 1;d<366;d+=5){
-            let curp = k
-            if(k>upper)
-                curp = upper
-            
-            let rawlpc = getILPriceChange(initialPrice,curp,upper,lower,rawAmtEth,rawAmtUsd)
-            let rawIL = rawlpc.newAssetValue
-            if(rawIL<0)
-                rawIL=0
-            scatter_points_raw.push([d,k,rawIL])
+    for(let k = 1;k<num_steps;k++){
+        let P = start_price + tick * k
+        //當前經過 IL 計算之後部位剩餘顆數
+        let P_clamp = Math.min( Math.max(P,lower),upper)
+        let rawlpc = getILPriceChange(cprice_matic,P_clamp,upper,lower,deltaX,deltaY)
+        let _res = rawlpc.newAssetValue
+        if(P<upper){
+            _res =rawlpc.Ly2 + rawlpc.Lx2 * P
+        }
+        _res += fee_rate_estimated_1
+        
+        
+        switch(hedgetype){
+            case "noHedge":{
+                _res += hedge_usd_amt
+                if(start_lose_money_point<0){
+                    if(_res>initCapital){
+                        start_lose_money_point = k-1
+                        breakevenpoint = P
+                    }
+                }
+                if(entry_price<0){
+                    if(P>=cprice_matic){
+                        entry_price = k-1
+                    }
+                }
+                let PnL = (_res-initCapital)/initCapital*100
+                scatter_points.push([P.toFixed(0),PnL])
+            }break;
+            case "futureHedge":{
+                
+                let margin = hedge_usd_amt + (cprice_matic - P) * tolower.Lx2
+                let bLiqudate = (margin / hedge_usd_amt)<0.33
+                if(bLiqudate){
+                    margin = 0
+                }
+                _res += margin
 
+                if(start_lose_money_point<0){
+                    if(_res<initCapital){
+                        start_lose_money_point = k-1
+                        breakevenpoint = P
+                    }
+                }
+                if(entry_price<0){
+                    if(P>=cprice_matic){
+                        entry_price = k-1
+                    }
+                }
+                
+                let PnL = -(_res-initCapital)/initCapital*100
+                if(!bLiqudate){
+                    scatter_points.push([P.toFixed(0),PnL])
+                }
+            }break;
+            case "hteHedge":{
+                hte_price = constant_hte_p / P
+                _res += amt_hte * hte_price
+                
+                // hte 專用
+                let curcapdif = parseFloat(_res-initCapital)
+                
+                if(k==1){
+                    if(curcapdif<0){
+                        bzPair.push(k)
+                    }
+                }
+                if(k==num_steps-1){
+                    if(bzPair.length===1){
+                        bzPair.push(k)
+                        hte_below_cap.push(bzPair)
+                    }
+                }
+                if(curcapdif * prvdif < 0){
+                    if((prvdif<=0)&&(curcapdif>0)){ //close
+                        if(bzPair.length===1){
+                            bzPair.push(k)
+                            hte_below_cap.push(bzPair)
+                            bzPair = []
+                        }
+                         
+                        if(breakevenpoint<0.01){
+                            breakevenpoint = P
+                            start_lose_money_point = k-1
+                        }
+                    }else if((prvdif>0)&&(curcapdif<=0)){ // open
+                        if(bzPair.length===0){
+                            bzPair.push(k)
+                        } 
+                    }
+                }
+                prvdif = curcapdif
+                if(entry_price<0){
+                    if(P>=cprice_matic){
+                        entry_price = k-1
+                    }
+                }
 
-            let nthDay_tvl = initTVL * (1+TVLGrowRate/30*d)
-            let rand = Math.random()
-            let todayVolEstimation = tradevol_lower + rand * (tradevol_upper - tradevol_lower)
-            
-            let feeIncome_rw = (rawLq / nthDay_tvl) * todayVolEstimation * (1+TVLGrowRate/30*d) * fee_rate * 0.01
-            feeIncome_raw_accu += feeIncome_rw
-
-            let rawIL_fee = rawIL + feeIncome_raw_accu
-            scatter_points_raw_fee.push([d,k,rawIL_fee])
-
-
-            let ilpc = getILPriceChange(initialPrice,curp,upper,lower,initialAmtEth,initialAmtUsd)
-            let newAssetValue = ilpc.newAssetValue
-            if(newAssetValue<0)
-                newAssetValue=0
-            
-            let hedge_price = initialPrice
-            let h_eth = (initialCapital*hedge_rto) / initialPrice
-            const max_lvg = 10
-            let _lvg = (1 - hedge_rto) / hedge_rto
-            if(_lvg>max_lvg){
-                _lvg = max_lvg
-            }
-            let nominalSz = _lvg*h_eth
-            let uPnL = Math.max( h_eth*hedge_price + (hedge_price - k) * nominalSz , 0 )
-            let fundrate = fundrate_lower + rand * (fundrate_upper - fundrate_lower)
-            let fundrate_income = 0
-            if(uPnL>0.001){
-                fundrate_income =  h_eth * fundrate * hedge_price
-                fundrate_income_accu += fundrate_income
-            }
-
-            let hedged_asset = newAssetValue + uPnL + fundrate_income_accu
-            scatter_points_hdeged.push([d,k,hedged_asset])
-            
-            let feeIncome = (initialLq / nthDay_tvl) * todayVolEstimation * (1+TVLGrowRate/30*d) * fee_rate * 0.01
-            feeIncome_accu += feeIncome
-
-            let curCapital = hedged_asset + feeIncome_accu
-            scatter_points.push([d,k,curCapital])
-
-            //console.log(`day ${d} price${k} asset=${newAssetValue} fee ${feeIncome_accu} heg ${(uPnL+fundrate_income_accu)} total ${curCapital}` )
-
-            
-            if(rawIL_fee>profithigh){
-                profithigh=rawIL_fee
-            }
-            if(newAssetValue>profithigh){
-                profithigh=newAssetValue
-            }
-            if(curCapital>profithigh){
-                profithigh=curCapital
+                let PnL = (_res-initCapital)/initCapital * 100
+                scatter_points.push([P.toFixed(0),PnL])
+            }break;
+        }
+        if(lower_idx<1){
+            if(P>=lower){
+                lower_idx = k-1
             }
         }
+        if(upper_idx<1){
+            if(P>=upper){
+                upper_idx = k-1
+            }
+        }
+        
     }
+    
+    
+    switch(hedgetype){
+        case "noHedge":{
+            below_zero.push(
+                {
+                    gt: 0,
+                    lt: start_lose_money_point,
+                    color: 'rgba(0, 0, 180, 0.4)'
+                },
+            )
+            below_zero_line.push(
+                {
+                    name: 'entryPrice',
+                    xAxis:entry_price,
+                    label: { 
+                        formatter: 'entryPrice',
+                        fontSize: '18'
+                    },
+                },
+                {
+                    name: 'lower',
+                    xAxis:lower_idx,
+                    label: { 
+                        formatter: 'lower',
+                        fontSize: '18'
+                    },
+                },
+                {
+                    name: 'upper',
+                    xAxis:upper_idx,
+                    label: { 
+                        formatter: 'upper',
+                        fontSize: '18'
+                    },
+                }
+            )
+        }break;
+        case "futureHedge":{
+            if(liquidation_point<0){
+                liquidation_point = num_steps
+            }
+            below_zero.push(
+                
+                {
+                    gt: 0,
+                    lt: start_lose_money_point,
+                    color: 'rgba(0, 0, 180, 0.4)'
+                }
+            )
+
+            below_zero_line.push(
+                {
+                    name: 'liquidate',
+                    xAxis:liquidation_point,
+                    label: { 
+                        formatter: 'liquidate',
+                        fontSize: '18'
+                    },
+                },
+                {
+                    name: 'entryPrice',
+                    xAxis:entry_price,
+                    label: { 
+                        formatter: 'entryPrice',
+                        fontSize: '18'
+                    },
+                },
+                {
+                    name: 'lower',
+                    xAxis:lower_idx,
+                    label: { 
+                        formatter: 'lower',
+                        fontSize: '18'
+                    },
+                },
+                {
+                    name: 'upper',
+                    xAxis:upper_idx,
+                    label: { 
+                        formatter: 'upper',
+                        fontSize: '18'
+                    },
+                }
+            )
+        }break;
+        case "hteHedge":{
+            for(let pr of hte_below_cap){
+                below_zero.push(
+                    {
+                        gt: pr[0],
+                        lt: pr[1],
+                        color: 'rgba(0, 0, 180, 0.4)'
+                    },
+                )
+            }
+            below_zero_line.push(
+                {
+                    name: 'entryPrice',
+                    xAxis:entry_price,
+                    label: { 
+                        formatter: 'entryPrice',
+                        fontSize: '18'
+                    },
+                },
+                {
+                    name: 'lower',
+                    xAxis:lower_idx,
+                    label: { 
+                        formatter: 'lower',
+                        fontSize: '18'
+                    },
+                },
+                {
+                    name: 'upper',
+                    xAxis:upper_idx,
+                    label: { 
+                        formatter: 'upper',
+                        fontSize: '18'
+                    },
+                }
+            )
+        }break;
+    }
+    
 }
 
-const toggleChartData = (visualType,froceRecalc=false) => {
-    
-    if(scatter_points_raw.length<1){
-        simulate()
-    }
-    if(froceRecalc){
-        simulate()
-    }
-    switch(visualType){
-        case `raw`:{
-            console.log(`Show non Hedged`);
-            let opt1 = chart_opt_with_param("Day","Price","Asset Value",scatter_points_raw,profitlow,profithigh)
-            chart_d.setOption(opt1)
-        }
-        break
-        case `rawwithfee`:{
-            console.log(`Show non Hedged with fee`);
-            let opt1 = chart_opt_with_param("Day","Price","Asset Value",scatter_points_raw_fee,profitlow,profithigh)
-            chart_d.setOption(opt1)
-        }
-        break
-        case `hedge`:{
-            console.log(`Show Hedged no fee`);
-            let opt1 = chart_opt_with_param("Day","Price","Asset Value",scatter_points_hdeged,profitlow,profithigh)
-            chart_d.setOption(opt1)
-        }
-        break
-        case `hedgeandfee`:{
-            console.log(`Show Hedged and fee`);
-            let opt1 = chart_opt_with_param("Day","Price","Asset Value",scatter_points,profitlow,profithigh)
-            chart_d.setOption(opt1)
-        }
-        break
-    }
+
+const toggleChartData = (cnt,hedgetype="noHedge") => {
+    simulate(cnt,hedgetype)
+    let opt1 = chart_opt_with_param(cnt,scatter_points,breakevenpoint)
+    chart_d.setOption(opt1)
 }
