@@ -95,7 +95,7 @@ const chart_opt_with_param = (day,data,breakevenpoint) => {
         yAxis: {
             name: "PnL(%)",
             type: 'value',
-            min:-30,
+            min:-10,
             max:12,
             boundaryGap: [0, '30%'],
             axisLabel: {
@@ -306,7 +306,7 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
         if(P<upper){
             _res =rawlpc.Ly2 + rawlpc.Lx2 * P
         }
-        _res += fee_rate_estimated_1
+        _res -= fee_rate_estimated_1
         
         
         switch(hedgetype){
