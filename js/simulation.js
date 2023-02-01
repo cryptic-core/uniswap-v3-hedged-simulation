@@ -323,7 +323,7 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
                         entry_price = k-1
                     }
                 }
-                let PnL = (_res-initCapital)/initCapital*100
+                let PnL = -(_res-initCapital)/initCapital*100
                 scatter_points.push([P.toFixed(0),PnL])
             }break;
             case "futureHedge":{
@@ -417,8 +417,8 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
         case "noHedge":{
             below_zero.push(
                 {
-                    gt: 0,
-                    lt: start_lose_money_point,
+                    gt: start_lose_money_point,
+                    lt: num_steps-1,
                     color: 'rgba(0, 0, 180, 0.4)'
                 },
             )
