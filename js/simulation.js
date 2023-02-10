@@ -95,7 +95,7 @@ const chart_opt_with_param = (day,data,breakevenpoint) => {
         yAxis: {
             name: "PnL(%)",
             type: 'value',
-            min:-10,
+            min:-30,
             max:12,
             boundaryGap: [0, '30%'],
             axisLabel: {
@@ -306,11 +306,9 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
         if(P<upper){
             _res =rawlpc.Ly2 + rawlpc.Lx2 * P
         }
-        _res -= fee_rate_estimated_1
-        
         
         switch(hedgetype){
-            case "noHedge":{
+            case "noHedge":{  // put spread(sell put + buy put)
                 _res += hedge_usd_amt
                 if(start_lose_money_point<0){
                     if(_res>initCapital){
@@ -323,20 +321,24 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
                         entry_price = k-1
                     }
                 }
-                let PnL = -(_res-initCapital)/initCapital*100
-                scatter_points.push([P.toFixed(0),PnL])
+                
+                // simulate spread
+                if(P<lower){
+                    let lower_lpc = getILPriceChange(cprice_matic,lower,upper,lower,deltaX,deltaY)
+                    _res = rawlpc.Ly2 + lower_lpc.Lx2 * lower + hedge_usd_amt
+                }
+                _res += fee_rate_estimated_1
+
+                // buy put
+                let pnL_put_spread = (_res-initCapital)/initCapital*100
+                
+                scatter_points.push([P.toFixed(0),pnL_put_spread])
             }break;
             case "futureHedge":{
                 
-                let margin = hedge_usd_amt + (cprice_matic - P) * tolower.Lx2
-                let bLiqudate = (margin / hedge_usd_amt)<0.33
-                if(bLiqudate){
-                    margin = 0
-                }
-                _res += margin
-
+                _res += hedge_usd_amt
                 if(start_lose_money_point<0){
-                    if(_res<initCapital){
+                    if(_res>initCapital){
                         start_lose_money_point = k-1
                         breakevenpoint = P
                     }
@@ -347,10 +349,14 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
                     }
                 }
                 
-                let PnL = -(_res-initCapital)/initCapital*100
-                if(!bLiqudate){
-                    scatter_points.push([P.toFixed(0),PnL])
+                // simulate spread
+                if(P<lower){
+                    let lower_lpc = getILPriceChange(cprice_matic,lower,upper,lower,deltaX,deltaY)
+                    _res = rawlpc.Ly2 + lower_lpc.Lx2 * lower + hedge_usd_amt
                 }
+                _res += fee_rate_estimated_1
+                let pnL_call_spread = -(_res-initCapital)/initCapital*100
+                scatter_points.push([P.toFixed(0),pnL_call_spread])
             }break;
             case "hteHedge":{
                 hte_price = constant_hte_p / P
@@ -417,8 +423,8 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
         case "noHedge":{
             below_zero.push(
                 {
-                    gt: start_lose_money_point,
-                    lt: num_steps-1,
+                    gt: 0,
+                    lt: start_lose_money_point,
                     color: 'rgba(0, 0, 180, 0.4)'
                 },
             )
@@ -456,10 +462,15 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
             below_zero.push(
                 
                 {
-                    gt: 0,
-                    lt: start_lose_money_point,
+                    gt: start_lose_money_point,
+                    lt: upper_idx,
                     color: 'rgba(0, 0, 180, 0.4)'
-                }
+                },
+                {
+                    gt: upper_idx,
+                    lt: num_steps,
+                    color: 'rgba(10, 0, 180, 0.08)'
+                },
             )
 
             below_zero_line.push(
