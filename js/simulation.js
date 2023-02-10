@@ -309,7 +309,7 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
         _res -= fee_rate_estimated_1
         
         
-        switch(hedgetype){
+        switch(hedgetype){  //buy put , with auto stop loss
             case "noHedge":{
                 _res += hedge_usd_amt
                 if(start_lose_money_point<0){
@@ -326,7 +326,7 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
                 let PnL = -(_res-initCapital)/initCapital*100
                 scatter_points.push([P.toFixed(0),PnL])
             }break;
-            case "futureHedge":{
+            case "futureHedge":{ // buy call
                 
                 let margin = hedge_usd_amt + (cprice_matic - P) * tolower.Lx2
                 let bLiqudate = (margin / hedge_usd_amt)<0.33
@@ -418,9 +418,14 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
             below_zero.push(
                 {
                     gt: start_lose_money_point,
-                    lt: num_steps-1,
+                    lt: upper_idx,
                     color: 'rgba(0, 0, 180, 0.4)'
                 },
+                {
+                    gt: upper_idx,
+                    lt: num_steps,
+                    color: 'rgba(10, 0, 180, 0.08)'
+                }
             )
             below_zero_line.push(
                 {
