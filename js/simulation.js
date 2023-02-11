@@ -131,24 +131,7 @@ const chart_opt_with_param = (day,data,breakevenpoint) => {
                     color: '#5470C6',
                     width: 5
                 },
-                markPoint: {
-                    symbol: "path://m 0,0 h 48 v 20 h -30 l -6,10 l -6,-10 h -6 z",
-                    symbolSize: 50,
-                    symbolOffset: ["34%", "-50%"],
-                    symbolKeepAspect: true,
-                    label: {
-                        position: "insideTop",
-                        distance: 7,
-                    },
-                    data: [
-                        { 
-                            name: 'breakeven',
-                            value: breakevenpoint.toFixed(0),
-                            xAxis: start_lose_money_point,
-                            yAxis: 0 
-                        }
-                    ]
-                },
+                
                 areaStyle: {},
                 "data": data,
                 "label": {
@@ -336,20 +319,14 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
                 _res2 += fee_rate_estimated_1
                 _res2 += hedge_usd_amt
                 let PnL2 = -(_res2-initCapital)/initCapital*100*0.66
-
-                if(start_lose_money_point<0){
-                    if((PnL+PnL2)>0){
-                        
-                        
-                    }
-                }
+                // range 11
                 if(entry_price<0){
                     if(P2>=cprice_matic){
-                        entry_price = k
-                        breakevenpoint = k
-                        start_lose_money_point = k
-                        lower_idx = k+81
-                        upper_idx = k-81
+                        entry_price = k+50
+                        breakevenpoint = k+50
+                        start_lose_money_point = k+150
+                        lower_idx = k-181
+                        upper_idx = k+181
                     }
                 }
                 scatter_points.push([P.toFixed(0),PnL+PnL2])
