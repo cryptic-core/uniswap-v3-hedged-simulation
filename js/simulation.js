@@ -557,7 +557,8 @@ const simulate_aave_neutral = (cnt)=>{
         curusd += fee_rate_estimated_2
 
         hedged_res += curusd
-        scatter_points.push([P.toFixed(3),hedged_res])
+        let Pnl = (hedged_res - initCapital)/initCapital*100
+        scatter_points.push([P.toFixed(3),Pnl])
         
         
         //#region below zero
