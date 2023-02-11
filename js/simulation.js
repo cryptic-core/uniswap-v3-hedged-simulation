@@ -324,12 +324,19 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
                     if(P2>=cprice_matic){
                         entry_price = k+50
                         breakevenpoint = k+50
-                        start_lose_money_point = k+150
+                        start_lose_money_point = k+30
                         lower_idx = k-181
                         upper_idx = k+181
                     }
                 }
-                scatter_points.push([P.toFixed(0),PnL+PnL2])
+
+                let pltval = PnL+PnL2
+                if(true){ // reverse the curve to call 
+                    pltval *= -1
+                    start_lose_money_point = k+30
+                }
+                
+                scatter_points.push([P.toFixed(0),pltval])
             }break;
             case "futureHedge":{
                 
@@ -411,13 +418,30 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
     
     switch(hedgetype){
         case "noHedge":{
-            below_zero.push(
-                {
-                    gt: 0,
-                    lt: start_lose_money_point,
-                    color: 'rgba(0, 0, 180, 0.4)'
-                },
-            )
+            let callspread = true
+            if(callspread){
+                below_zero.push(
+                    {
+                        gt: breakevenpoint-20,
+                        lt: upper_idx,
+                        color: 'rgba(0, 0, 180, 0.4)'
+                    },
+                    {
+                        gt: upper_idx,
+                        lt: num_steps,
+                        color: 'rgba(0, 0, 180, 0.08)'
+                    },
+                )
+            }else{
+                below_zero.push(
+                    {
+                        gt: 0,
+                        lt: start_lose_money_point,
+                        color: 'rgba(0, 0, 180, 0.08)'
+                    },
+                )
+            }
+
             below_zero_line.push(
                 {
                     name: 'entryPrice',
