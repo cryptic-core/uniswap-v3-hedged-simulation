@@ -558,7 +558,8 @@ const simulate_aave_neutral = (cnt)=>{
 
         hedged_res += curusd
         let Pnl = (hedged_res - initCapital)/initCapital*100
-        scatter_points.push([P.toFixed(3),Pnl])
+        let reversed_pnl = -Pnl
+        scatter_points.push([P.toFixed(3),reversed_pnl])
         
         
         //#region below zero
@@ -614,16 +615,29 @@ const simulate_aave_neutral = (cnt)=>{
         }
     }
 
-    
-    for(let pr of hte_below_cap){
+    let reversed = true
+    if(reversed){
+        console.log(hte_below_cap);
         below_zero.push(
             {
-                gt: pr[0],
-                lt: pr[1],
+                gt: hte_below_cap[0][1],
+                lt: hte_below_cap[1][0],
                 color: 'rgba(0, 0, 180, 0.4)'
             },
         )
+    }else{
+        for(let pr of hte_below_cap){
+            below_zero.push(
+                {
+                    gt: pr[0],
+                    lt: pr[1],
+                    color: 'rgba(0, 0, 180, 0.4)'
+                },
+            )
+        }
     }
+    
+
     below_zero_line.push(
         {
             name: 'liquidate',
