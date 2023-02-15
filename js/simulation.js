@@ -318,20 +318,20 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
                 }
                 _res2 += fee_rate_estimated_1
                 _res2 += hedge_usd_amt
-                let PnL2 = -(_res2-initCapital)/initCapital*100*0.66
+                let PnL2 = -(_res2-initCapital)/initCapital*100*0.668
                 // range 11
                 if(entry_price<0){
                     if(P2>=cprice_matic){
                         entry_price = k+50
-                        breakevenpoint = k+50
-                        start_lose_money_point = k+30
+                        breakevenpoint = k+30
+                        start_lose_money_point = k
                         lower_idx = k-181
                         upper_idx = k+181
                     }
                 }
 
-                let pltval = PnL+PnL2
-                if(true){ // reverse the curve to call 
+                let pltval = (PnL+PnL2)*5
+                if(false){ // reverse the curve to call 
                     pltval *= -1
                     start_lose_money_point = k+30
                 }
