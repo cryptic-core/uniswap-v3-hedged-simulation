@@ -96,7 +96,7 @@ const chart_opt_with_param = (day,data,breakevenpoint) => {
             name: "PnL(%)",
             type: 'value',
             min:-30,
-            max:12,
+            max:30,
             boundaryGap: [0, '30%'],
             axisLabel: {
                 fontSize: '14'
@@ -316,22 +316,22 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
                 if(P2<upper){
                     _res2 =rawlpc2.Ly2 + rawlpc2.Lx2 * P2
                 }
-                _res2 += fee_rate_estimated_1
+                _res2 += fee_rate_estimated_1*0.95
                 _res2 += hedge_usd_amt
                 let PnL2 = -(_res2-initCapital)/initCapital*100*0.668
                 // range 11
                 if(entry_price<0){
                     if(P2>=cprice_matic){
                         entry_price = k+50
-                        breakevenpoint = k+30
+                        breakevenpoint = k+25
                         start_lose_money_point = k
                         lower_idx = k-181
                         upper_idx = k+181
                     }
                 }
 
-                let pltval = (PnL+PnL2)*5
-                if(false){ // reverse the curve to call 
+                let pltval = (PnL+PnL2)*7.5
+                if(true){ // reverse the curve to call 
                     pltval *= -1
                     start_lose_money_point = k+30
                 }
@@ -418,8 +418,8 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
     
     switch(hedgetype){
         case "noHedge":{
-            let callspread = true
-            if(callspread){
+            let bearspread = true
+            if(bearspread){
                 below_zero.push(
                     {
                         gt: breakevenpoint-20,
@@ -437,7 +437,7 @@ const simulate = (cnt=0,hedgetype="noHedge") => {
                     {
                         gt: 0,
                         lt: start_lose_money_point,
-                        color: 'rgba(0, 0, 180, 0.08)'
+                        color: 'rgba(0, 0, 180, 0.4)'
                     },
                 )
             }
